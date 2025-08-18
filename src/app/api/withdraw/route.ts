@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       if (userRowIndex > 0) {
         // Delete the user's registration row
         await sheets.spreadsheets.batchUpdate({
-          spreadsheetId: SPREADSHEET_ID,
+          spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
           requestBody: {
             requests: [
               {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       if (utmRowIndex > 0) {
         // Delete the user's UTM data row
         await sheets.spreadsheets.batchUpdate({
-          spreadsheetId: SPREADSHEET_ID,
+          spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
           requestBody: {
             requests: [
               {

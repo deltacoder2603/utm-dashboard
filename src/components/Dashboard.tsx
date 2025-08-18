@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchUTMData } from '@/lib/sheets';
 import { LeadStats } from '@/types';
-import { LogOut, RefreshCw, TrendingUp, Users, DollarSign, Target } from 'lucide-react';
+import { LogOut, RefreshCw, TrendingUp, Users, DollarSign } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -102,7 +102,7 @@ export default function Dashboard() {
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center border border-indigo-200">
-                    <Target className="h-7 w-7 text-indigo-600" />
+                    <TrendingUp className="h-7 w-7 text-indigo-600" />
                   </div>
                 </div>
                 <div className="ml-6">
@@ -165,7 +165,7 @@ export default function Dashboard() {
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center border border-purple-200">
-                        <Target className="h-6 w-6 text-purple-600" />
+                        <TrendingUp className="h-6 w-6 text-purple-600" />
                       </div>
                     </div>
                     <div className="ml-4 w-0 flex-1">
@@ -206,7 +206,7 @@ export default function Dashboard() {
         {!userUTMData && !isLoading && (
           <div className="text-center py-12">
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-              <Target className="h-16 w-16 text-gray-400 mx-auto mb-6" />
+              <TrendingUp className="h-16 w-16 text-gray-400 mx-auto mb-6" />
               <h3 className="text-2xl font-semibold text-gray-900 mb-4">No Data Found</h3>
               <p className="text-lg text-gray-600 mb-6">No performance data found for your UTM ID: <span className="font-mono bg-gray-100 px-3 py-1 rounded-lg border border-gray-200">{user.utmId}</span></p>
               <button 

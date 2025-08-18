@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { JWT } from 'google-auth-library';
 import { google } from 'googleapis';
 import { googleConfig, SHEET_IDS, RATE_PER_LEAD } from '../../../lib/config';

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Link, Phone, Lock, Target, ArrowRight, ArrowLeft } from 'lucide-react';
+import { User, Mail, Link, Phone, Lock, ArrowRight } from 'lucide-react';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({

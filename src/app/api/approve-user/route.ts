@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
       });
     } catch (appendError) {
       console.error('Error appending user:', appendError);
-      throw new Error(`Failed to add user to Sheet1: ${appendError.message}`);
+      const errorMessage = appendError instanceof Error ? appendError.message : 'Unknown error';
+      throw new Error(`Failed to add user to Sheet1: ${errorMessage}`);
     }
 
     // Step 2: Remove user from User_Registrations sheet
@@ -95,8 +96,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error in approve-user API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to approve user', details: error.message },
+      { error: 'Failed to approve user', details: errorMessage },
       { status: 500 }
     );
   }

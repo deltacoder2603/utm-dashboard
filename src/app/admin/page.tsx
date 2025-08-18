@@ -40,7 +40,6 @@ export default function AdminPage() {
   const [showUtmDialog, setShowUtmDialog] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<UserRegistration | null>(null);
   const [utmIdInput, setUtmIdInput] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -58,7 +57,6 @@ export default function AdminPage() {
         return;
       }
       
-      setIsAuthenticated(true);
       fetchData();
     };
     

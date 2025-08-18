@@ -1,7 +1,4 @@
-import { User, UTMData, LeadStats } from '@/types';
-
-// Rate per lead in rupees
-const RATE_PER_LEAD = 45;
+import { User, LeadStats } from '@/types';
 
 // Client-safe functions that call the API routes
 export async function fetchUsers(): Promise<User[]> {
@@ -28,10 +25,8 @@ export async function fetchUTMData(): Promise<LeadStats> {
     console.error('Error fetching UTM data:', error);
     return {
       totalLeads: 0,
-      totalDisbursals: 0,
-      conversionRate: '0%',
-      dailyAverage: 0,
-      utmData: []
+      totalEarnings: 0,
+      leads: []
     };
   }
 }
