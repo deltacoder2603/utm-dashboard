@@ -4,15 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchUTMData } from '@/lib/sheets';
 import { LeadStats } from '@/types';
-import { LogOut, RefreshCw, TrendingUp, Users, DollarSign, Target, AlertTriangle } from 'lucide-react';
+import { LogOut, RefreshCw, TrendingUp, Users, DollarSign, Target } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -40,52 +38,20 @@ export default function Dashboard() {
     loadData();
   };
 
-  const handleWithdraw = () => {
-    setShowWithdrawConfirm(true);
-  };
+  // Find user's UTM data - only when stats are available
+  const userUTMData = user && stats?.leads?.find(utm => utm.utmId === user.utmId);
 
-  const confirmWithdraw = async () => {
-    setIsWithdrawing(true);
-    try {
-      // Make API call to withdraw user
-      const response = await fetch('/api/withdraw', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: user?.username,
-          utmId: user?.utmId
-        }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        // Logout user after successful withdrawal
-        logout();
-      } else {
-        setError(result.error || 'Withdrawal failed');
-      }
-    } catch (error) {
-      console.error('Withdrawal error:', error);
-      setError('An error occurred during withdrawal');
-    } finally {
-      setIsWithdrawing(false);
-      setShowWithdrawConfirm(false);
-    }
-  };
-
-  const cancelWithdraw = () => {
-    setShowWithdrawConfirm(false);
-  };
-
+  // Don't render until user is loaded to prevent hydration mismatch
   if (!user) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading user data...</p>
+        </div>
+      </div>
+    );
   }
-
-  // Find user's UTM data
-  const userUTMData = stats?.utmData.find(utm => utm.utmId === user.utmId);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -105,14 +71,6 @@ export default function Dashboard() {
               >
                 <RefreshCw className={`h-5 w-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
-              </button>
-              <button
-                onClick={handleWithdraw}
-                disabled={isWithdrawing}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
-              >
-                <AlertTriangle className="h-5 w-5 mr-2" />
-                Withdraw
               </button>
               <button
                 onClick={handleLogout}
@@ -175,7 +133,7 @@ export default function Dashboard() {
                     <div className="ml-4 w-0 flex-1">
                       <dl>
                         <dt className="text-sm font-medium text-gray-500 truncate">Total Leads</dt>
-                        <dd className="text-2xl font-bold text-gray-900">{userUTMData.leadCount.toLocaleString()}</dd>
+                        <dd className="text-2xl font-bold text-gray-900">{userUTMData.count.toLocaleString()}</dd>
                       </dl>
                     </div>
                   </div>
@@ -233,7 +191,7 @@ export default function Dashboard() {
                       <dl>
                         <dt className="text-sm font-medium text-gray-500 truncate">Status</dt>
                         <dd className="text-2xl font-bold text-gray-900">
-                          {userUTMData.leadCount > 0 ? 'Active' : 'Pending'}
+                          {userUTMData.count > 0 ? 'Active' : 'Pending'}
                         </dd>
                       </dl>
                     </div>
@@ -270,53 +228,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
-      {/* Withdrawal Confirmation Modal */}
-      {showWithdrawConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
-            <div className="text-center">
-              <div className="mx-auto h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center mb-6">
-                <AlertTriangle className="h-8 w-8 text-orange-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Confirm Withdrawal</h3>
-              <p className="text-gray-600 mb-8">
-                Are you sure you want to withdraw? This action will:
-                <br />
-                • Remove all your data from the system
-                <br />
-                • Delete your account permanently
-                <br />
-                • Cannot be undone
-              </p>
-              
-              <div className="flex space-x-4">
-                <button
-                  onClick={cancelWithdraw}
-                  disabled={isWithdrawing}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmWithdraw}
-                  disabled={isWithdrawing}
-                  className="flex-1 px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200 disabled:opacity-50"
-                >
-                  {isWithdrawing ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
-                    </div>
-                  ) : (
-                    'Confirm Withdrawal'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

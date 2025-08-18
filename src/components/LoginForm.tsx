@@ -21,6 +21,18 @@ export default function LoginForm() {
     setError('');
 
     try {
+      // Check if it's admin login
+      const isAdminUser =
+        (username === 'admin' && password === 'admin@idioticmedia') ||
+        (username === 'username-admin' && password === 'password-admin@idioticmedia');
+      if (isAdminUser) {
+        // Store admin credentials in localStorage
+        localStorage.setItem('username', username);
+        localStorage.setItem('password', password);
+        router.push('/admin');
+        return;
+      }
+
       const success = await login(username, password);
       if (success) {
         router.push('/dashboard');

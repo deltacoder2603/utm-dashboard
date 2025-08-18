@@ -11,16 +11,14 @@ export interface User {
 
 export interface UTMData {
   utmId: string;
-  leadCount: number;
+  count: number;
   earnings: number;
 }
 
 export interface LeadStats {
   totalLeads: number;
-  totalDisbursals: number;
-  conversionRate: string;
-  dailyAverage: number;
-  utmData: UTMData[];
+  totalEarnings: number;
+  leads: UTMData[];
 }
 
 export interface AuthContextType {

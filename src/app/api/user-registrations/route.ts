@@ -22,30 +22,32 @@ export async function GET() {
     
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-      range: 'Sheet1!A:D',
+      range: 'User_Registrations!A:F',
     });
     
     const values = response.data.values || [];
-    const users = [];
+    const registrations = [];
     
     // Skip header row, start from index 1
     for (let i = 1; i < values.length; i++) {
       const row = values[i];
-      if (row && row.length >= 4 && row[0] && row[1]) { // username, password, utmId, name
-        users.push({
-          username: row[0],
-          password: row[1],
-          utmId: row[2] || '',
-          name: row[3] || ''
+      if (row.length >= 6 && row[0] && row[1] && row[2] && row[3] && row[4] && row[5]) {
+        registrations.push({
+          name: row[0],
+          email: row[1],
+          socialMediaLink: row[2] || '',
+          mobileNumber: row[3],
+          username: row[4],
+          password: row[5]
         });
       }
     }
     
-    return NextResponse.json(users);
+    return NextResponse.json(registrations);
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('Error fetching user registrations:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch users from Google Sheets' },
+      { error: 'Failed to fetch user registrations from Google Sheets' },
       { status: 500 }
     );
   }
