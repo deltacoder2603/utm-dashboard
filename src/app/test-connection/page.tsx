@@ -2,8 +2,16 @@
 
 import { useState } from 'react';
 
+interface TestResult {
+  success?: boolean;
+  error?: string;
+  details?: string;
+  solution?: string;
+  config?: Record<string, unknown>;
+}
+
 export default function TestConnectionPage() {
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
 
   const testConnection = async () => {
@@ -13,7 +21,7 @@ export default function TestConnectionPage() {
       const data = await response.json();
       setTestResult(data);
     } catch (error) {
-      setTestResult({ error: 'Failed to test connection', details: error });
+      setTestResult({ error: 'Failed to test connection', details: error instanceof Error ? error.message : String(error) });
     } finally {
       setLoading(false);
     }

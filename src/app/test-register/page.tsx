@@ -71,7 +71,7 @@ export default function TestRegisterPage() {
         <div className="mt-8 p-4 bg-yellow-100 rounded">
           <h2 className="font-bold mb-2">Instructions:</h2>
           <ol className="list-decimal list-inside space-y-1">
-            <li>Click the "Test Registration API" button</li>
+            <li>Click the &ldquo;Test Registration API&rdquo; button</li>
             <li>Check the browser console (F12) for detailed logs</li>
             <li>Check the terminal where Next.js is running for server logs</li>
             <li>Compare the results with direct curl testing</li>

@@ -2,8 +2,20 @@
 
 import { useState } from 'react';
 
+interface TestResult {
+  status: 'SUCCESS' | 'FAILED';
+  statusCode?: number;
+  responseTime?: string;
+  details: string;
+  error?: string | null;
+}
+
+interface TestResults {
+  [key: string]: TestResult;
+}
+
 export default function NetworkTestPage() {
-  const [testResults, setTestResults] = useState<any>({});
+  const [testResults, setTestResults] = useState<TestResults>({});
   const [loading, setLoading] = useState(false);
 
   const testEndpoints = [
@@ -15,7 +27,7 @@ export default function NetworkTestPage() {
 
   const runNetworkTest = async () => {
     setLoading(true);
-    const results: any = {};
+    const results: TestResults = {};
 
     for (const endpoint of testEndpoints) {
       try {
@@ -95,7 +107,7 @@ export default function NetworkTestPage() {
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Test Results</h2>
             
             <div className="space-y-4">
-              {Object.entries(testResults).map(([name, result]: [string, any]) => (
+              {Object.entries(testResults).map(([name, result]: [string, TestResult]) => (
                 <div key={name} className={`border rounded-lg p-4 ${getStatusColor(result.status)}`}>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold">{name}</h3>
@@ -125,7 +137,7 @@ export default function NetworkTestPage() {
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-semibold text-blue-800 mb-2">Troubleshooting Steps:</h4>
               <ol className="list-decimal list-inside text-blue-700 space-y-1 text-sm">
-                <li><strong>If all endpoints fail:</strong> Check your internet connection and try disabling VPN if you're using one</li>
+                <li><strong>If all endpoints fail:</strong> Check your internet connection and try disabling VPN if you&apos;re using one</li>
                 <li><strong>If only OAuth2 fails:</strong> This suggests DNS resolution issues - try using a different DNS server (8.8.8.8 or 1.1.1.1)</li>
                 <li><strong>If some endpoints work:</strong> There may be specific firewall rules blocking certain Google services</li>
                 <li><strong>Network restrictions:</strong> Some corporate networks block Google APIs - contact your network administrator</li>

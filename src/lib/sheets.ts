@@ -66,6 +66,7 @@ export async function authenticateUser(username: string, password: string): Prom
       
       if (isAdminUser) {
         return {
+          id: 'admin',
           username: username,
           password: password,
           utmId: 'admin',
@@ -94,6 +95,7 @@ export async function authenticateUser(username: string, password: string): Prom
     
     if (isAdminUser) {
       return {
+        id: 'admin',
         username: username,
         password: password,
         utmId: 'admin',
