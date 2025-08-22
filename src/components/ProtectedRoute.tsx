@@ -32,6 +32,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
         }
         
         setIsAuthorized(true);
+        setIsLoading(false);
       } else {
         // Check for regular user authentication
         if (!isAuthenticated) {
@@ -40,12 +41,12 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
         }
         
         setIsAuthorized(true);
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
     
-    checkAuth();
+    // Add a small delay to ensure localStorage is available
+    setTimeout(checkAuth, 100);
   }, [isAuthenticated, requireAdmin, router]);
 
   if (isLoading) {

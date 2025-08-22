@@ -27,6 +27,19 @@ export function validateGoogleConfig() {
   }
 }
 
+// Log configuration status for debugging
+export function logGoogleConfigStatus() {
+  console.log('=== Google Configuration Status ===');
+  console.log('Project ID:', googleConfig.project_id);
+  console.log('Client Email:', googleConfig.client_email);
+  console.log('Private Key ID:', googleConfig.private_key_id ? '✅ Set' : '❌ Missing');
+  console.log('Private Key:', googleConfig.private_key ? '✅ Set' : '❌ Missing');
+  console.log('UTM Sheet ID:', SHEET_IDS.UTM_SHEET_ID);
+  console.log('Users Sheet ID:', SHEET_IDS.USERS_SHEET_ID);
+  console.log('Rate per lead:', RATE_PER_LEAD);
+  console.log('===================================');
+}
+
 // Google Sheets IDs
 export const SHEET_IDS = {
   UTM_SHEET_ID: process.env.UTM_SHEET_ID || '1HMROFgEXlyPU5gXCl60B3fAC0D3sR_uW5OD7srGf-Ig',

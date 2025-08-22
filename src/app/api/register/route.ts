@@ -20,19 +20,27 @@ async function getGoogleSheetsClient() {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== Registration API Called ===');
+    
     const body = await request.json();
     const { name, email, socialMediaLink, mobileNumber, username, password } = body;
+    
+    console.log('Received data:', { name, email, mobileNumber, username, password: password ? '[HIDDEN]' : 'MISSING' });
 
     // Validation
     if (!name || !email || !mobileNumber || !username || !password) {
+      console.log('Validation failed - missing fields');
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
+    console.log('Validation passed, attempting to get Google Sheets client...');
+
     // Get Google Sheets client
     const sheets = await getGoogleSheetsClient();
+    console.log('Google Sheets client obtained successfully');
 
     try {
       // Add user to User_Registrations sheet only
@@ -40,7 +48,10 @@ export async function POST(request: NextRequest) {
         [name, email, socialMediaLink || '', mobileNumber, username, password, ''] // Empty UTM ID field
       ];
 
-      await sheets.spreadsheets.values.append({
+      console.log('Attempting to append data to sheet:', SHEET_IDS.USERS_SHEET_ID);
+      console.log('Data to append:', registrationData);
+
+      const appendResult = await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
         range: 'User_Registrations!A:G',
         valueInputOption: 'RAW',
@@ -49,6 +60,8 @@ export async function POST(request: NextRequest) {
           values: registrationData
         }
       });
+
+      console.log('Append result:', appendResult.data);
 
       console.log(`User ${username} registered successfully`);
 
@@ -65,7 +78,7 @@ export async function POST(request: NextRequest) {
     } catch (sheetsError) {
       console.error('Google Sheets API error:', sheetsError);
       return NextResponse.json(
-        { error: 'Failed to save user data to Google Sheets' },
+        { error: 'Failed to save user data to Google Sheets', details: sheetsError instanceof Error ? sheetsError.message : String(sheetsError) },
         { status: 500 }
       );
     }
@@ -73,7 +86,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

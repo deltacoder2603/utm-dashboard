@@ -18,36 +18,46 @@ async function getGoogleSheetsClient() {
 
 export async function GET() {
   try {
-    const sheets = await getGoogleSheetsClient();
+    console.log('=== Fetching User Registrations ===');
     
+    // Get Google Sheets client
+    const sheets = await getGoogleSheetsClient();
+    console.log('Google Sheets client obtained successfully');
+
+    // Fetch data from User_Registrations sheet
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-      range: 'User_Registrations!A:F',
+      range: 'User_Registrations!A:G', // A=Name, B=Email, C=Social Media, D=Mobile, E=Username, F=Password, G=Approved
     });
-    
-    const values = response.data.values || [];
-    const registrations = [];
-    
-    // Skip header row, start from index 1
-    for (let i = 1; i < values.length; i++) {
-      const row = values[i];
-      if (row.length >= 6 && row[0] && row[1] && row[2] && row[3] && row[4] && row[5]) {
-        registrations.push({
-          name: row[0],
-          email: row[1],
-          socialMediaLink: row[2] || '',
-          mobileNumber: row[3],
-          username: row[4],
-          password: row[5]
-        });
-      }
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      console.log('No data found in sheet');
+      return NextResponse.json({ users: [] });
     }
+
+    // Skip header row and process data
+    const users = rows.slice(1).map((row, index) => {
+      const [name, email, socialMedia, mobile, username, , approved] = row;
+      return {
+        id: index + 1,
+        name: name || '',
+        email: email || '',
+        socialMedia: socialMedia || '',
+        mobile: mobile || '',
+        username: username || '',
+        approved: approved === 'Yes' || approved === 'yes' || approved === 'YES'
+      };
+    });
+
+    console.log(`Fetched ${users.length} users from sheet`);
     
-    return NextResponse.json(registrations);
+    return NextResponse.json({ users });
+
   } catch (error) {
     console.error('Error fetching user registrations:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch user registrations from Google Sheets' },
+      { error: 'Failed to fetch user registrations', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

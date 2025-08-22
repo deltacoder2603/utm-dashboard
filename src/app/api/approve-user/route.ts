@@ -1,104 +1,150 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { JWT } from 'google-auth-library';
 import { google } from 'googleapis';
-import { googleConfig, SHEET_IDS, validateGoogleConfig } from '@/lib/config';
+import { googleConfig, SHEET_IDS } from '../../../lib/config';
+
+// Initialize Google Sheets API client
+async function getGoogleSheetsClient() {
+  const jwtClient = new JWT({
+    email: googleConfig.client_email,
+    key: googleConfig.private_key,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+
+  await jwtClient.authorize();
+  
+  return google.sheets({ version: 'v4', auth: jwtClient });
+}
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate Google configuration first
-    validateGoogleConfig();
-
-    const { username, password, utmId, name } = await request.json();
-
-    if (!username || !password || !name) {
+    console.log('=== Approve User API Called ===');
+    
+    const body = await request.json();
+    const { username, utmId } = body;
+    
+    if (!username) {
       return NextResponse.json(
-        { error: 'Username, password, and name are required' },
+        { error: 'Username is required' },
         { status: 400 }
       );
     }
 
-    // Create JWT client
-    const auth = new JWT({
-      email: googleConfig.client_email,
-      key: googleConfig.private_key,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    if (!utmId) {
+      return NextResponse.json(
+        { error: 'UTM ID is required for approval' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`Attempting to approve user: ${username} with UTM ID: ${utmId}`);
+
+    // Get Google Sheets client
+    const sheets = await getGoogleSheetsClient();
+    console.log('Google Sheets client obtained successfully');
+
+    // First, find the row number for the user and get their details
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
+      range: 'User_Registrations!A:G',
     });
 
-    // Authorize the client
-    await auth.authorize();
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      return NextResponse.json(
+        { error: 'No users found in sheet' },
+        { status: 404 }
+      );
+    }
 
-    const sheets = google.sheets({ version: 'v4', auth });
+    // Find the row index for the username (column E) and get user details
+    let userRowIndex = -1;
+    let userDetails = null;
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][4] === username) { // Column E (index 4) contains username
+        userRowIndex = i + 1; // Google Sheets is 1-indexed
+        userDetails = {
+          name: rows[i][0],      // Column A: Name
+          email: rows[i][1],     // Column B: Email
+          socialMedia: rows[i][2], // Column C: Social Media
+          mobile: rows[i][3],    // Column D: Mobile
+          username: rows[i][4],  // Column E: Username
+          password: rows[i][5],  // Column F: Password
+        };
+        break;
+      }
+    }
 
-    // Step 1: Add user to Sheet1 (approved users)
-    const userData = [
-      [username, password, utmId || '', name]
-    ];
+    if (userRowIndex === -1 || !userDetails) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
 
+    console.log(`Found user at row ${userRowIndex}, processing approval...`);
+
+    // Step 1: Add user to the credentials sheet (Sheet1)
     try {
-      await sheets.spreadsheets.values.append({
+      const credentialsData = [
+        [userDetails.username, userDetails.password, utmId, userDetails.name]
+      ];
+
+      console.log('Adding user to credentials sheet:', credentialsData);
+
+      const appendResult = await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
         range: 'Sheet1!A:D',
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {
-          values: userData
+          values: credentialsData
         }
       });
-    } catch (appendError) {
-      console.error('Error appending user:', appendError);
-      const errorMessage = appendError instanceof Error ? appendError.message : 'Unknown error';
-      throw new Error(`Failed to add user to Sheet1: ${errorMessage}`);
+
+      console.log('User added to credentials sheet:', appendResult.data);
+    } catch (credentialsError) {
+      console.error('Error adding user to credentials sheet:', credentialsError);
+      return NextResponse.json(
+        { error: 'Failed to add user to credentials sheet', details: credentialsError instanceof Error ? credentialsError.message : String(credentialsError) },
+        { status: 500 }
+      );
     }
 
-    // Step 2: Remove user from User_Registrations sheet
+    // Step 2: Update the Approved column (column G) in User_Registrations
     try {
-      // Read the registrations sheet to find the user's row
-      const registrationsResponse = await sheets.spreadsheets.values.get({
+      const updateResult = await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-        range: 'User_Registrations!A:F',
+        range: `User_Registrations!G${userRowIndex}`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [['Yes']]
+        }
       });
 
-      const registrationsData = registrationsResponse.data.values || [];
-      let userRowIndex = -1;
-
-      // Find the row with the matching username (column E)
-      for (let i = 1; i < registrationsData.length; i++) {
-        if (registrationsData[i][4] === username) { // Username is in column E (index 4)
-          userRowIndex = i + 1; // +1 because sheet rows are 1-indexed
-          break;
-        }
-      }
-
-      if (userRowIndex > 0) {
-        try {
-          // Instead of deleting the row, clear the data
-          await sheets.spreadsheets.values.clear({
-            spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-            range: `User_Registrations!A${userRowIndex}:F${userRowIndex}`,
-          });
-        } catch (clearError) {
-          console.error('Error clearing row data:', clearError);
-          // Continue with the process even if clearing fails
-        }
-      }
-    } catch (clearError) {
-      console.error('Error clearing registration:', clearError);
-      // Continue with the process even if clearing fails
+      console.log('Approval status updated:', updateResult.data);
+    } catch (approvalError) {
+      console.error('Error updating approval status:', approvalError);
+      // Even if approval status update fails, the user is already in credentials sheet
+      console.log('Note: User added to credentials but approval status update failed');
     }
 
-    return NextResponse.json({ 
-      message: `User ${username} approved successfully`,
-      username,
-      password,
-      utmId: utmId || '',
-      name
+    console.log(`User ${username} approved successfully and added to credentials sheet`);
+
+    return NextResponse.json({
+      success: true,
+      message: `User ${username} has been approved successfully and added to credentials sheet with UTM ID: ${utmId}`,
+      user: {
+        username: userDetails.username,
+        name: userDetails.name,
+        utmId: utmId
+      }
     });
 
   } catch (error) {
-    console.error('Error in approve-user API:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error approving user:', error);
     return NextResponse.json(
-      { error: 'Failed to approve user', details: errorMessage },
+      { error: 'Failed to approve user', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

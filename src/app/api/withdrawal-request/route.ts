@@ -18,28 +18,28 @@ async function getGoogleSheetsClient() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== Withdraw User API Called ===');
+    console.log('=== Withdrawal Request API Called ===');
     
     const body = await request.json();
-    const { username } = body;
+    const { username, utmId, name } = body;
     
-    if (!username) {
+    if (!username || !utmId || !name) {
       return NextResponse.json(
-        { error: 'Username is required' },
+        { error: 'Username, UTM ID, and name are required' },
         { status: 400 }
       );
     }
 
-    console.log(`Attempting to withdraw user: ${username}`);
+    console.log(`Processing withdrawal request for user: ${username}, UTM ID: ${utmId}`);
 
     // Get Google Sheets client
     const sheets = await getGoogleSheetsClient();
     console.log('Google Sheets client obtained successfully');
 
-    // First, find the row number for the user
+    // First, find the user in the User_Registrations sheet
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-      range: 'User_Registrations!A:G',
+      range: 'User_Registrations!A:H',
     });
 
     const rows = response.data.values;
@@ -66,26 +66,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Found user at row ${userRowIndex}, withdrawing user...`);
+    console.log(`Found user at row ${userRowIndex}, updating withdraw column...`);
 
-    // Clear the entire row data to effectively remove the user
-    const clearResult = await sheets.spreadsheets.values.clear({
+    // Update the Withdraw column (column H) for the specific user
+    const updateResult = await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-      range: `User_Registrations!A${userRowIndex}:G${userRowIndex}`,
+      range: `User_Registrations!H${userRowIndex}`,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [['Yes']]
+      }
     });
 
-    console.log('Clear result:', clearResult.data);
-    console.log(`User ${username} withdrawn successfully`);
+    console.log('Withdraw column updated:', updateResult.data);
+
+    // Generate a unique request ID
+    const requestId = `req_${Date.now()}`;
+    const requestDate = new Date().toISOString();
+
+    console.log(`Withdrawal request submitted for user ${username}:`, {
+      id: requestId,
+      username,
+      utmId,
+      name,
+      requestDate,
+      status: 'pending'
+    });
 
     return NextResponse.json({
       success: true,
-      message: `User ${username} has been withdrawn successfully`
+      message: 'Withdrawal request submitted successfully',
+      request: {
+        id: requestId,
+        username,
+        utmId,
+        name,
+        requestDate,
+        status: 'pending'
+      }
     });
 
   } catch (error) {
-    console.error('Error withdrawing user:', error);
+    console.error('Error submitting withdrawal request:', error);
     return NextResponse.json(
-      { error: 'Failed to withdraw user', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Failed to submit withdrawal request', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

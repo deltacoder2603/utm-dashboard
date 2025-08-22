@@ -1,0 +1,14 @@
+# Google Service Account Credentials
+# You need to create a service account in Google Cloud Console and download the JSON key file
+GOOGLE_PROJECT_ID=your-project-id
+GOOGLE_PRIVATE_KEY_ID=your-private-key-id
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key content here\n-----END PRIVATE KEY-----"
+GOOGLE_CLIENT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
+GOOGLE_CLIENT_ID=your-client-id
+
+# Google Sheets IDs
+UTM_SHEET_ID=your-utm-sheet-id
+USERS_SHEET_ID=your-users-sheet-id
+
+# Rate per lead in rupees
+RATE_PER_LEAD=45
