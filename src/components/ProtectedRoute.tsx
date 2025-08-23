@@ -26,6 +26,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
           
           if (isAdminUser) {
             setIsAuthorized(true);
+            setIsLoading(false);
             return;
           }
         }
