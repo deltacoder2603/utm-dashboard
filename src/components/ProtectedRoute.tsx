@@ -18,21 +18,21 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
   useEffect(() => {
     const checkAuth = () => {
       if (requireAdmin) {
-        // Check for admin credentials
-        const username = localStorage.getItem('username');
-        const password = localStorage.getItem('password');
-        
-        const isAdminUser =
-          (username === 'admin' && password === 'admin@idioticmedia') ||
-          (username === 'username-admin' && password === 'password-admin@idioticmedia');
-        
-        if (!isAdminUser) {
-          router.push('/login');
-          return;
+        // Check for admin user in the main authentication system
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          const isAdminUser = userData.username === 'admin' && userData.isAdmin === true;
+          
+          if (isAdminUser) {
+            setIsAuthorized(true);
+            return;
+          }
         }
         
-        setIsAuthorized(true);
-        setIsLoading(false);
+        // If not admin, redirect to login
+        router.push('/login');
+        return;
       } else {
         // Check for regular user authentication
         if (!isAuthenticated) {

@@ -106,9 +106,25 @@ export async function authenticateUser(username: string, password: string): Prom
       return user;
     }
     
-    // Check for hardcoded admin credentials as fallback (updated to match actual password)
-    if (username === 'admin' && password === 'Shashank') {
+    // Check for hardcoded admin credentials as fallback
+    if (username === 'admin' && password === 'admin@idioticmedia') {
       console.log('Admin user authenticated via hardcoded credentials');
+      const adminUser = {
+        id: 'admin',
+        username: username,
+        password: password,
+        utmId: 'admin',
+        name: 'Admin',
+        isAdmin: true,
+        isApproved: true,
+        registrationDate: new Date().toISOString()
+      };
+      return adminUser;
+    }
+    
+    // Also check for the password that exists in the sheet
+    if (username === 'admin' && password === 'Shashank') {
+      console.log('Admin user authenticated via sheet credentials');
       const adminUser = {
         id: 'admin',
         username: username,

@@ -80,19 +80,19 @@ export default function AdminPage() {
   useEffect(() => {
     // Admin authentication check
     const checkAuth = () => {
-      const username = localStorage.getItem('username');
-      const password = localStorage.getItem('password');
-      
-      const isAdminUser =
-        (username === 'admin' && password === 'admin@idioticmedia') ||
-        (username === 'username-admin' && password === 'password-admin@idioticmedia');
-      
-      if (!isAdminUser) {
-        router.push('/login');
-        return;
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        const isAdminUser = userData.username === 'admin' && userData.isAdmin === true;
+        
+        if (isAdminUser) {
+          fetchData();
+          return;
+        }
       }
       
-      fetchData();
+      // If not admin, redirect to login
+      router.push('/login');
     };
     
     checkAuth();
