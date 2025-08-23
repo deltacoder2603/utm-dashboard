@@ -1,7 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Check, Clock, AlertCircle, Target, Users, DollarSign, Clock3, TrendingUp, BarChart3, UserCheck, LogOut, RefreshCw, X } from 'lucide-react';
+import { Copy, Check, Clock, AlertCircle, Target, Users, DollarSign, Clock3, TrendingUp, BarChart3, UserCheck, LogOut, RefreshCw, X, Edit } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 interface UTMData {
   totalLeads: number;
@@ -10,6 +17,7 @@ interface UTMData {
     utmId: string;
     count: number;
     earnings: number;
+    ratePerLead?: number;
   }>;
 }
 
@@ -32,19 +40,41 @@ interface WithdrawalRequest {
   status: string;
 }
 
+interface MoneyWithdrawalRequest {
+  username: string;
+  amount: string;
+  accountHolderName: string;
+  accountNumber: string;
+  bankName: string;
+  ifscCode: string;
+  status: string;
+  timestamp: string;
+  approved: string;
+  rowIndex: number;
+}
+
 export default function AdminPage() {
   const [utmData, setUtmData] = useState<UTMData | null>(null);
   const [userRegistrations, setUserRegistrations] = useState<UserRegistration[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
+  const [moneyWithdrawalRequests, setMoneyWithdrawalRequests] = useState<MoneyWithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'utm' | 'pending' | 'approved' | 'withdrawals'>('utm');
+  const [activeTab, setActiveTab] = useState<'utm' | 'pending' | 'approved' | 'withdrawals' | 'money-withdrawals'>('utm');
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [showUtmDialog, setShowUtmDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserRegistration | null>(null);
   const [utmIdInput, setUtmIdInput] = useState('');
+  const [ratePerLeadInput, setRatePerLeadInput] = useState('45');
   const [copyStatus, setCopyStatus] = useState<{ [key: string]: 'idle' | 'copied' }>({});
+  const [editingUTM, setEditingUTM] = useState<{utmId: string; count: number; earnings: number} | null>(null);
+  const [editUTMData, setEditUTMData] = useState<{utmId: string; count: number; earnings: number; ratePerLead: number}>({
+    utmId: '', 
+    count: 0, 
+    earnings: 0, 
+    ratePerLead: 45
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -84,10 +114,11 @@ export default function AdminPage() {
       setLoading(true);
       setError(null);
       
-      const [utmResponse, registrationsResponse, withdrawalResponse] = await Promise.all([
+      const [utmResponse, registrationsResponse, withdrawalResponse, moneyWithdrawalResponse] = await Promise.all([
         fetch('/api/utm-data'),
         fetch('/api/user-registrations'),
-        fetch('/api/withdrawal-requests')
+        fetch('/api/withdrawal-requests'),
+        fetch('/api/admin/withdrawal-requests')
       ]);
 
       if (utmResponse.ok) {
@@ -105,6 +136,11 @@ export default function AdminPage() {
         const withdrawalData = await withdrawalResponse.json();
         setWithdrawalRequests(withdrawalData.requests || []);
       }
+
+      if (moneyWithdrawalResponse.ok) {
+        const moneyWithdrawalData = await moneyWithdrawalResponse.json();
+        setMoneyWithdrawalRequests(moneyWithdrawalData.withdrawalRequests || []);
+      }
     } catch (err) {
       setError('Failed to fetch data');
       console.error('Error fetching data:', err);
@@ -118,13 +154,19 @@ export default function AdminPage() {
   const handleApproveClick = (user: UserRegistration) => {
     setSelectedUser(user);
     setUtmIdInput('');
+    setRatePerLeadInput('45'); // Reset to default rate
     setShowUtmDialog(true);
   };
 
-  // Approve a user with UTM ID
+  // Approve a user with UTM ID and rate
   const handleApproveUser = async () => {
     if (!selectedUser || !utmIdInput.trim()) {
       alert('Please enter a UTM ID');
+      return;
+    }
+
+    if (!ratePerLeadInput.trim() || isNaN(parseInt(ratePerLeadInput))) {
+      alert('Please enter a valid rate per lead');
       return;
     }
 
@@ -137,16 +179,18 @@ export default function AdminPage() {
         },
         body: JSON.stringify({ 
           username: selectedUser.username,
-          utmId: utmIdInput.trim()
+          utmId: utmIdInput.trim(),
+          ratePerLead: parseInt(ratePerLeadInput)
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        alert(`User ${selectedUser.username} approved successfully with UTM ID: ${utmIdInput.trim()}`);
+        alert(`User ${selectedUser.username} approved successfully!\n\nUTM ID: ${utmIdInput.trim()}\nRate per Lead: ₹${ratePerLeadInput}`);
         setShowUtmDialog(false);
         setSelectedUser(null);
         setUtmIdInput('');
+        setRatePerLeadInput('45');
         await fetchData(); // Reload data
       } else {
         const errorData = await response.json();
@@ -160,15 +204,15 @@ export default function AdminPage() {
     }
   };
 
-  // Withdraw a user
-  const handleWithdrawUser = async (username: string) => {
-    if (!confirm(`Are you sure you want to withdraw user ${username}?`)) {
+  // Remove a user
+  const handleRemoveUser = async (username: string) => {
+    if (!confirm(`Are you sure you want to remove user ${username}? This will permanently delete all their data from both sheets.`)) {
       return;
     }
 
     try {
       setApproving(username);
-      const response = await fetch('/api/withdraw-user', {
+      const response = await fetch('/api/remove-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -177,15 +221,15 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
-        alert(`User ${username} withdrawn successfully!`);
+        alert(`User ${username} removed successfully! All data has been deleted from both sheets.`);
         await fetchData(); // Reload data
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to withdraw user');
+        throw new Error(errorData.error || 'Failed to remove user');
       }
     } catch (error) {
-      console.error('Error withdrawing user:', error);
-      alert(`Failed to withdraw user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error removing user:', error);
+      alert(`Failed to remove user: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setApproving(null);
     }
@@ -247,6 +291,78 @@ export default function AdminPage() {
     }
   };
 
+  // Approve a money withdrawal request
+  const handleApproveMoneyWithdrawal = async (request: MoneyWithdrawalRequest) => {
+    if (!confirm(`Are you sure you want to approve the withdrawal request of ₹${request.amount} for ${request.username}?`)) {
+      return;
+    }
+
+    try {
+      setApproving(`${request.username}-${request.rowIndex}`);
+      const response = await fetch('/api/admin/approve-withdrawal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          username: request.username, 
+          amount: request.amount, 
+          status: 'Approved', 
+          rowIndex: request.rowIndex 
+        }),
+      });
+
+      if (response.ok) {
+        alert(`Withdrawal request of ₹${request.amount} for ${request.username} approved successfully!`);
+        await fetchData(); // Reload data
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to approve withdrawal request');
+      }
+    } catch (error) {
+      console.error('Error approving money withdrawal:', error);
+      alert(`Failed to approve withdrawal: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setApproving(null);
+    }
+  };
+
+  // Reject a money withdrawal request
+  const handleRejectMoneyWithdrawal = async (request: MoneyWithdrawalRequest) => {
+    if (!confirm(`Are you sure you want to reject the withdrawal request of ₹${request.amount} for ${request.username}?`)) {
+      return;
+    }
+
+    try {
+      setApproving(`${request.username}-${request.rowIndex}`);
+      const response = await fetch('/api/admin/approve-withdrawal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          username: request.username, 
+          amount: request.amount, 
+          status: 'Rejected', 
+          rowIndex: request.rowIndex 
+        }),
+      });
+
+      if (response.ok) {
+        alert(`Withdrawal request of ₹${request.amount} for ${request.username} rejected successfully!`);
+        await fetchData(); // Reload data
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to reject withdrawal request');
+      }
+    } catch (error) {
+      console.error('Error rejecting money withdrawal:', error);
+      alert(`Failed to reject withdrawal: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setApproving(null);
+    }
+  };
+
   const copyUTMId = async (text: string, utmId: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -257,6 +373,55 @@ export default function AdminPage() {
     } catch (err) {
       console.error('Failed to copy text: ', err);
     }
+  };
+
+  // Edit UTM Data functions
+  const handleEditUTM = (lead: {utmId: string; count: number; earnings: number}) => {
+    setEditingUTM(lead);
+    const ratePerLead = lead.count > 0 ? Math.round(lead.earnings / lead.count) : 45;
+    setEditUTMData({
+      utmId: lead.utmId,
+      count: lead.count,
+      earnings: lead.earnings,
+      ratePerLead: ratePerLead
+    });
+  };
+
+  const handleSaveUTMEdit = async () => {
+    if (!editingUTM) return;
+
+    try {
+      // For now, we'll update the data locally and refresh from server
+      // In a real implementation, you'd call an API to update the Google Sheets
+      const response = await fetch('/api/update-utm-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalUtmId: editingUTM.utmId,
+          updatedData: editUTMData
+        }),
+      });
+
+      if (response.ok) {
+        alert('UTM data updated successfully!');
+        setEditingUTM(null);
+        setEditUTMData({ utmId: '', count: 0, earnings: 0, ratePerLead: 45 });
+        await fetchData(); // Refresh data
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update UTM data');
+      }
+    } catch (error) {
+      console.error('Error updating UTM data:', error);
+      alert(`Failed to update UTM data: ${error instanceof Error ? error.message : 'Feature not yet implemented'}`);
+    }
+  };
+
+  const handleCancelUTMEdit = () => {
+    setEditingUTM(null);
+    setEditUTMData({ utmId: '', count: 0, earnings: 0, ratePerLead: 45 });
   };
 
   const handleLogout = () => {
@@ -327,134 +492,129 @@ export default function AdminPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total UTM Leads</p>
-              <p className="text-2xl font-bold text-blue-600">{utmData?.totalLeads || 0}</p>
-              <p className="text-sm text-gray-500">Active campaigns</p>
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total UTM Leads</p>
+                <p className="text-2xl font-bold text-blue-600">{utmData?.totalLeads || 0}</p>
+                <p className="text-sm text-gray-500">Active campaigns</p>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
             </div>
-            <div className="h-12 w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-              <p className="text-2xl font-bold text-green-600">₹{utmData?.totalEarnings || 0}</p>
-              <p className="text-sm text-gray-500">Revenue generated</p>
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Earnings</p>
+                <p className="text-2xl font-bold text-green-600">₹{utmData?.totalEarnings || 0}</p>
+                <p className="text-sm text-gray-500">Revenue generated</p>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-white" />
+              </div>
             </div>
-            <div className="h-12 w-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-              <p className="text-2xl font-bold text-orange-600">{pendingUsers.length}</p>
-              <p className="text-sm text-gray-500">Awaiting review</p>
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
+                <p className="text-2xl font-bold text-orange-600">{pendingUsers.length}</p>
+                <p className="text-sm text-gray-500">Awaiting review</p>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center">
+                <Users className="h-6 w-6 text-white" />
+              </div>
             </div>
-            <div className="h-12 w-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Withdrawal Requests</p>
-              <p className="text-2xl font-bold text-purple-600">{withdrawalRequests.length}</p>
-              <p className="text-sm text-gray-500">Pending review</p>
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Withdrawal Requests</p>
+                <p className="text-2xl font-bold text-purple-600">{withdrawalRequests.length}</p>
+                <p className="text-sm text-gray-500">Pending review</p>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center">
+                <Clock3 className="h-6 w-6 text-white" />
+              </div>
             </div>
-            <div className="h-12 w-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center">
-              <Clock3 className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main Content Tabs */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
-        {/* Tab Navigation */}
-        <div className="flex space-x-1 mb-6 bg-gray-100 rounded-xl p-1">
-          <button
-            onClick={() => setActiveTab('utm')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              activeTab === 'utm'
-                ? 'bg-blue-500 text-white shadow-lg'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            UTM Data
-          </button>
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              activeTab === 'pending'
-                ? 'bg-orange-500 text-white shadow-lg'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            Pending Users ({pendingUsers.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('approved')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              activeTab === 'approved'
-                ? 'bg-green-500 text-white shadow-lg'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            Approved Users ({approvedUsers.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('withdrawals')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              activeTab === 'withdrawals'
-                ? 'bg-purple-500 text-white shadow-lg'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Clock3 className="w-4 h-4" />
-            Withdrawal Requests ({withdrawalRequests.length})
-          </button>
-        </div>
+      <Card className="bg-white/80 backdrop-blur-sm border-white/20 p-8">
+                  <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'utm' | 'pending' | 'approved' | 'withdrawals')}>
+          <TabsList className="grid w-full grid-cols-5 bg-gray-100">
+            <TabsTrigger value="utm" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              UTM Data
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Pending Users ({pendingUsers.length})
+            </TabsTrigger>
+            <TabsTrigger value="approved" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Approved Users ({approvedUsers.length})
+            </TabsTrigger>
+            <TabsTrigger value="money-withdrawals" className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Money Withdrawals ({moneyWithdrawalRequests.length})
+            </TabsTrigger>
+          </TabsList>
 
         {/* Tab Content */}
-        {activeTab === 'utm' && (
+        <TabsContent value="utm" className="mt-6">
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4">UTM Campaign Data</h3>
             {utmData && utmData.leads && utmData.leads.length > 0 ? (
               <div className="space-y-4">
-                {utmData.leads.map((lead, index) => (
-                  <div key={index} className="bg-gray-50/50 rounded-2xl p-6 border border-gray-200/50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
-                          <Target className="h-6 w-6 text-white" />
+                {utmData.leads.map((lead, index) => {
+                  const ratePerLead = lead.ratePerLead || 45; // Use rate from UTM data
+                  return (
+                    <div key={index} className="bg-gray-50/50 rounded-2xl p-6 border border-gray-200/50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4 flex-1">
+                          <div className="h-12 w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
+                            <Target className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">UTM ID</label>
+                                <p className="font-semibold text-gray-900 break-all">{lead.utmId}</p>
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Number of Leads</label>
+                                <p className="text-lg font-bold text-blue-600">{lead.count}</p>
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rate per Lead</label>
+                                <p className="text-lg font-bold text-purple-600">₹{ratePerLead}</p>
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Revenue</label>
+                                <p className="text-lg font-bold text-green-600">₹{lead.earnings}</p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{lead.utmId}</p>
-                          <p className="text-sm text-gray-600">{lead.count} leads</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-green-600">₹{lead.earnings}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">₹{45} per lead</span>
+                        <div className="flex items-center gap-2 ml-4">
                           <button
                             onClick={() => copyUTMId(lead.utmId, lead.utmId)}
-                            className="p-1 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
                             title="Copy UTM ID"
                           >
                             {copyStatus[lead.utmId] === 'copied' ? (
@@ -463,11 +623,18 @@ export default function AdminPage() {
                               <Copy className="w-4 h-4 text-blue-600" />
                             )}
                           </button>
+                          <button
+                            onClick={() => handleEditUTM(lead)}
+                            className="p-2 hover:bg-blue-50 bg-blue-100 rounded-lg transition-all duration-200"
+                            title="Edit UTM Data"
+                          >
+                            <Edit className="w-4 h-4 text-blue-600" />
+                          </button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8">
@@ -479,9 +646,9 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'pending' && (
+        <TabsContent value="pending" className="mt-6">
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-orange-500" />
@@ -541,9 +708,9 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'approved' && (
+        <TabsContent value="approved" className="mt-6">
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Users className="w-5 h-5 text-green-500" />
@@ -572,8 +739,8 @@ export default function AdminPage() {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleWithdrawUser(user.username)}
+                                            <button
+                        onClick={() => handleRemoveUser(user.username)}
                         disabled={approving === user.username}
                         className="bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-red-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
                       >
@@ -585,9 +752,9 @@ export default function AdminPage() {
                         ) : (
                           <>
                             <UserCheck className="w-4 h-4" />
-                            Withdraw User
+                            Remove User
                           </>
-                          )}
+                        )}
                       </button>
                     </div>
                   </div>
@@ -603,9 +770,9 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'withdrawals' && (
+        <TabsContent value="withdrawals" className="mt-6">
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Clock3 className="w-5 h-5 text-purple-500" />
@@ -667,8 +834,244 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        )}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="money-withdrawals" className="mt-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-green-500" />
+              Money Withdrawal Requests
+            </h3>
+            {moneyWithdrawalRequests.length > 0 ? (
+              <div className="space-y-4">
+                {moneyWithdrawalRequests.map((request, index) => (
+                  <div key={index} className="bg-gray-50/50 rounded-2xl p-6 border border-gray-200/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center">
+                          <DollarSign className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-semibold text-gray-900">@{request.username}</p>
+                          <p className="text-lg font-bold text-green-600">₹{request.amount}</p>
+                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                            <div>
+                              <span className="font-medium">Bank:</span> {request.bankName}
+                            </div>
+                            <div>
+                              <span className="font-medium">Account:</span> ****{request.accountNumber.slice(-4)}
+                            </div>
+                            <div>
+                              <span className="font-medium">Holder:</span> {request.accountHolderName}
+                            </div>
+                            <div>
+                              <span className="font-medium">IFSC:</span> {request.ifscCode}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs text-gray-500">
+                              Requested: {new Date(request.timestamp).toLocaleDateString()}
+                            </span>
+                            {request.approved && (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                Approved: {request.approved}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                                              <div className="flex items-center gap-3">
+                          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            request.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                            request.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {request.status}
+                          </div>
+                          {request.status === 'Pending' && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleApproveMoneyWithdrawal(request)}
+                                disabled={approving === `${request.username}-${request.rowIndex}`}
+                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
+                              >
+                                {approving === `${request.username}-${request.rowIndex}` ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                    Processing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check className="w-4 h-4" />
+                                    Approve
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleRejectMoneyWithdrawal(request)}
+                                disabled={approving === `${request.username}-${request.rowIndex}`}
+                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
+                              >
+                                {approving === `${request.username}-${request.rowIndex}` ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                    Processing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <X className="w-4 h-4" />
+                                    Reject
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                          {request.status === 'Approved' && (
+                            <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                              ✓ Approved
+                            </div>
+                          )}
+                          {request.status === 'Rejected' && (
+                            <div className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                              ✗ Rejected
+                            </div>
+                          )}
+                        </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="h-20 w-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <DollarSign className="h-10 w-10 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Money Withdrawal Requests</h3>
+                <p className="text-gray-600">No money withdrawal requests have been made yet.</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </Card>
+
+      {/* UTM Edit Dialog */}
+      {editingUTM && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4 transform animate-in slide-in-from-bottom-4 duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <div className="text-center flex-1">
+                <div className="mx-auto h-16 w-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                  <Edit className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Edit UTM Data</h3>
+                <p className="text-gray-600">Modify UTM campaign details</p>
+              </div>
+              <button
+                onClick={handleCancelUTMEdit}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors duration-200"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="editUtmId" className="block text-sm font-medium text-gray-700 mb-2">
+                  UTM ID
+                </Label>
+                <Input
+                  id="editUtmId"
+                  type="text"
+                  value={editUTMData.utmId}
+                  onChange={(e) => setEditUTMData(prev => ({ ...prev, utmId: e.target.value }))}
+                  className="w-full"
+                  placeholder="Enter UTM ID"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="editLeadCount" className="block text-sm font-medium text-gray-700 mb-2">
+                    Number of Leads
+                  </Label>
+                  <Input
+                    id="editLeadCount"
+                    type="number"
+                    min="0"
+                    value={editUTMData.count}
+                    onChange={(e) => {
+                      const count = parseInt(e.target.value) || 0;
+                      setEditUTMData(prev => ({ 
+                        ...prev, 
+                        count,
+                        earnings: count * prev.ratePerLead // Auto-calculate earnings
+                      }));
+                    }}
+                    className="w-full"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="editRatePerLead" className="block text-sm font-medium text-gray-700 mb-2">
+                    Rate per Lead (₹)
+                  </Label>
+                  <Input
+                    id="editRatePerLead"
+                    type="number"
+                    min="0"
+                    value={editUTMData.ratePerLead}
+                    onChange={(e) => {
+                      const rate = parseInt(e.target.value) || 0;
+                      setEditUTMData(prev => ({ 
+                        ...prev, 
+                        ratePerLead: rate,
+                        earnings: prev.count * rate // Auto-calculate earnings
+                      }));
+                    }}
+                    className="w-full"
+                    placeholder="45"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="editEarnings" className="block text-sm font-medium text-gray-700 mb-2">
+                  Total Earnings (₹)
+                </Label>
+                <Input
+                  id="editEarnings"
+                  type="number"
+                  min="0"
+                  value={editUTMData.earnings}
+                  onChange={(e) => setEditUTMData(prev => ({ ...prev, earnings: parseInt(e.target.value) || 0 }))}
+                  className="w-full"
+                  placeholder="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto-calculated: {editUTMData.count} leads × ₹{editUTMData.ratePerLead} = ₹{editUTMData.count * editUTMData.ratePerLead}
+                </p>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={handleCancelUTMEdit}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveUTMEdit}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* UTM ID Dialog */}
       {showUtmDialog && selectedUser && (
@@ -687,6 +1090,7 @@ export default function AdminPage() {
                   setShowUtmDialog(false);
                   setSelectedUser(null);
                   setUtmIdInput('');
+                  setRatePerLeadInput('45');
                 }}
                 className="p-2 hover:bg-gray-100 rounded-xl transition-colors duration-200"
               >
@@ -709,6 +1113,24 @@ export default function AdminPage() {
                   autoFocus
                 />
               </div>
+
+              <div>
+                <label htmlFor="ratePerLead" className="block text-sm font-medium text-gray-700 mb-2">
+                  Rate per Lead (₹)
+                </label>
+                <input
+                  id="ratePerLead"
+                  type="text"
+                  pattern="[0-9]*"
+                  value={ratePerLeadInput}
+                  onChange={(e) => setRatePerLeadInput(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-900 placeholder-gray-500"
+                  placeholder="45"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the rate per lead for this user (e.g., 45, 75, 100)
+                </p>
+              </div>
               
               <div className="flex gap-3 pt-4">
                 <button
@@ -716,6 +1138,7 @@ export default function AdminPage() {
                     setShowUtmDialog(false);
                     setSelectedUser(null);
                     setUtmIdInput('');
+                    setRatePerLeadInput('45');
                   }}
                   className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-2xl font-medium hover:bg-gray-50 transition-all duration-300"
                 >
@@ -723,7 +1146,7 @@ export default function AdminPage() {
                 </button>
                 <button
                   onClick={handleApproveUser}
-                  disabled={!utmIdInput.trim() || approving === selectedUser.username}
+                  disabled={!utmIdInput.trim() || !ratePerLeadInput.trim() || approving === selectedUser.username}
                   className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3 rounded-2xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {approving === selectedUser.username ? 'Approving...' : 'Approve User'}

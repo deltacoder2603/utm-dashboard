@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, User, Lock, Target, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
 
+
 export default function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -21,21 +22,15 @@ export default function LoginForm() {
     setError('');
 
     try {
-      // Check if it's admin login
-      const isAdminUser =
-        (username === 'admin' && password === 'admin@idioticmedia') ||
-        (username === 'username-admin' && password === 'password-admin@idioticmedia');
-      if (isAdminUser) {
-        // Store admin credentials in localStorage
-        localStorage.setItem('username', username);
-        localStorage.setItem('password', password);
-        router.push('/admin');
-        return;
-      }
-
+      // Use the unified authentication flow for all users (including admin)
       const success = await login(username, password);
       if (success) {
-        router.push('/dashboard');
+        // Check if the user is admin and redirect accordingly
+        if (username === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard');
+        }
       } else {
         setError('Invalid username or password');
       }

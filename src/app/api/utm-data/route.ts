@@ -107,7 +107,64 @@ export async function GET() {
 
     let totalLeads = 0;
     let totalEarnings = 0;
-    const leads: Array<{utmId: string, count: number, earnings: number, products?: string[], cities?: string[]}> = [];
+    const leads: Array<{utmId: string, count: number, earnings: number, ratePerLead?: number, products?: string[], cities?: string[]}> = [];
+
+    // Fetch user rates from UTM table (summary sheet with rate column)
+    const userRates: { [utmId: string]: number } = {};
+    try {
+      // Fetch from summary sheet which should now include rate column
+      const summaryWithRatesResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_IDS.UTM_SHEET_ID,
+        range: 'summary!A:D', // UTM ID, Leads, Rate columns
+      });
+      
+      if (summaryWithRatesResponse.data.values && summaryWithRatesResponse.data.values.length > 1) {
+        summaryWithRatesResponse.data.values.slice(1).forEach((row: string[]) => {
+          if (row.length >= 4 && row[1] && row[1] !== 'Row Labels' && row[1] !== 'Grand Total') {
+            const utmId = row[1]; // UTM ID column (B)
+            const rate = row[3] ? parseInt(row[3]) : null; // Rate column (D)
+            if (utmId && rate && !isNaN(rate)) {
+              userRates[utmId] = rate;
+            }
+          }
+        });
+      }
+      console.log('User rates loaded from UTM table:', userRates);
+    } catch (error) {
+      console.log('Could not fetch user rates from UTM table, using default rate:', error);
+    }
+
+    // Function to insert new UTM ID with 0 leads to summary sheet
+    const insertNewUTMToSummary = async (utmId: string) => {
+      try {
+        // Find the last row with data in summary sheet
+        const summaryResponse = await sheets.spreadsheets.values.get({
+          spreadsheetId: SHEET_IDS.UTM_SHEET_ID,
+          range: 'summary!A:Z',
+        });
+        
+        const summaryRows = summaryResponse.data.values || [];
+        const lastDataRow = summaryRows.length;
+        
+        // Insert new UTM ID with 0 leads before the Grand Total row
+        const grandTotalRowIndex = summaryRows.findIndex(row => row[1] === 'Grand Total');
+        const insertRow = grandTotalRowIndex > 0 ? grandTotalRowIndex : lastDataRow;
+        
+        // Insert the new row
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SHEET_IDS.UTM_SHEET_ID,
+          range: `summary!A${insertRow + 1}`,
+          valueInputOption: 'RAW',
+          requestBody: {
+            values: [[utmId, 0]] // UTM ID with 0 leads
+          }
+        });
+        
+        console.log(`New UTM ID ${utmId} inserted to summary sheet with 0 leads`);
+      } catch (error) {
+        console.error('Error inserting UTM to summary sheet:', error);
+      }
+    };
 
     // Parse summary rows (column B is label, C is value)
     for (const row of summaryValues) {
@@ -123,12 +180,17 @@ export async function GET() {
       // Rows after header until 'Grand Total' are UTM rows
       for (let i = headerIndex + 1; i < summaryValues.length; i++) {
         const label = summaryValues[i][1]?.trim();
-        const countStr = summaryValues[i][2]?.trim();
+        const countStr = summaryValues[i][2]?.trim(); // Column C: Number of Leads
+        const rateStr = summaryValues[i][3]?.trim(); // Column D: Rate
         if (!label) continue;
         if (label === 'Grand Total') break;
         if (!countStr || isNaN(parseInt(countStr))) continue;
         const count = parseInt(countStr) || 0;
-        const earnings = count * RATE_PER_LEAD;
+        
+        // Get the rate from the UTM table (column D) or use default
+        const rateFromSheet = summaryValues[i][3] ? parseInt(summaryValues[i][3]) : null; // Column D: Rate
+        const rate = rateFromSheet || userRates[label] || RATE_PER_LEAD;
+        const earnings = count * rate;
         totalEarnings += earnings;
         
         // Get additional details from detailed sheet
@@ -149,6 +211,7 @@ export async function GET() {
           utmId: label,
           count,
           earnings,
+          ratePerLead: rate, // Include the rate per lead
           products: detailed.products ? Array.from(detailed.products) : [],
           cities: detailed.cities ? Array.from(detailed.cities) : []
         });

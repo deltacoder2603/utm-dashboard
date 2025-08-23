@@ -7,6 +7,9 @@ export interface User {
   email?: string;
   socialMediaLink?: string;
   mobileNumber?: string;
+  isAdmin?: boolean;
+  isApproved?: boolean;
+  registrationDate?: string;
 }
 
 export interface UTMData {

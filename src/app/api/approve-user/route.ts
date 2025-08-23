@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     console.log('=== Approve User API Called ===');
     
     const body = await request.json();
-    const { username, utmId } = body;
+    const { username, utmId, ratePerLead } = body;
     
     if (!username) {
       return NextResponse.json(
@@ -33,6 +33,13 @@ export async function POST(request: NextRequest) {
     if (!utmId) {
       return NextResponse.json(
         { error: 'UTM ID is required for approval' },
+        { status: 400 }
+      );
+    }
+
+    if (!ratePerLead || ratePerLead <= 0) {
+      return NextResponse.json(
+        { error: 'Valid rate per lead is required for approval' },
         { status: 400 }
       );
     }
@@ -84,17 +91,97 @@ export async function POST(request: NextRequest) {
 
     console.log(`Found user at row ${userRowIndex}, processing approval...`);
 
-    // Step 1: Add user to the credentials sheet (Sheet1)
+    // Step 1: Check if UTM ID already exists in summary sheet and insert if new
+    try {
+      const utmResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_IDS.UTM_SHEET_ID,
+        range: 'summary!A:Z', // Use summary sheet to check for UTM ID
+      });
+
+      const utmRows = utmResponse.data.values;
+      const utmIdExists = utmRows && utmRows.some(row => row[1] === utmId); // Column B contains UTM ID in summary sheet
+
+      if (utmIdExists) {
+        console.log(`UTM ID ${utmId} already exists in summary sheet, skipping insertion - not touching existing data`);
+        
+        // If UTM ID exists, we should update the rate column for that existing UTM ID
+        // Find the row with the existing UTM ID and update its rate
+        let existingUtmRowIndex = -1;
+        for (let i = 0; i < utmRows.length; i++) {
+          if (utmRows[i] && utmRows[i][1] === utmId) {
+            existingUtmRowIndex = i;
+            break;
+          }
+        }
+        
+        if (existingUtmRowIndex !== -1) {
+          // Update the rate column (column D) for the existing UTM ID
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: SHEET_IDS.UTM_SHEET_ID,
+            range: `summary!D${existingUtmRowIndex + 1}`, // Rate column D
+            valueInputOption: 'RAW',
+            requestBody: {
+              values: [[ratePerLead.toString()]]
+            }
+          });
+          console.log(`Updated rate for existing UTM ID ${utmId} to ${ratePerLead}`);
+        }
+      } else {
+        // Insert new UTM ID to summary sheet with 0 leads and rate
+        if (utmRows && utmRows.length > 0) {
+          // Find the last UTM data row (before any empty rows or totals)
+          let lastUTMRowIndex = 0;
+          for (let i = utmRows.length - 1; i >= 0; i--) {
+            if (utmRows[i] && utmRows[i][1] && (utmRows[i][1].startsWith('inf_') || utmRows[i][1].startsWith('divyanshu_'))) {
+              lastUTMRowIndex = i;
+              break;
+            }
+          }
+          
+          // Insert after the last UTM data row
+          const insertRow = lastUTMRowIndex + 2; // +2 because sheets are 1-indexed and we want to insert after
+          
+          // Insert the new UTM ID with 0 leads in column C and rate in column D
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: SHEET_IDS.UTM_SHEET_ID,
+            range: `summary!A${insertRow}`,
+            valueInputOption: 'RAW',
+            requestBody: {
+              values: [['', utmId, 0, ratePerLead]] // Empty A, UTM ID in B, 0 leads in C, Rate in D
+            }
+          });
+
+          console.log(`New UTM ID ${utmId} inserted to summary sheet at row ${insertRow} with rate ${ratePerLead} and 0 leads`);
+        } else {
+          // If no rows exist, insert after header row
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: SHEET_IDS.UTM_SHEET_ID,
+            range: 'summary!A11', // After header row (row 10)
+            valueInputOption: 'RAW',
+            requestBody: {
+              values: [['', utmId, 0, ratePerLead]] // Empty A, UTM ID in B, 0 leads in C, Rate in D
+            }
+          });
+
+          console.log(`New UTM ID ${utmId} inserted to summary sheet at row 11 with rate ${ratePerLead} and 0 leads`);
+        }
+      }
+    } catch (utmError) {
+      console.error('Error handling UTM summary sheet:', utmError);
+      // Continue with approval even if UTM sheet update fails
+    }
+
+    // Step 2: Add user to the credentials sheet (Sheet1) with rate per lead
     try {
       const credentialsData = [
-        [userDetails.username, userDetails.password, utmId, userDetails.name]
+        [userDetails.username, userDetails.password, utmId, userDetails.name, ratePerLead]
       ];
 
       console.log('Adding user to credentials sheet:', credentialsData);
 
       const appendResult = await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-        range: 'Sheet1!A:D',
+        range: 'Sheet1!A:E', // Updated to include rate column
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {

@@ -94,7 +94,7 @@ export async function GET() {
     
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-      range: 'Sheet1!A:D',
+      range: 'Sheet1!A:E', // Read columns: Username, Password, utmid, Name, Rate
     });
     
     const values = response.data.values || [];
@@ -103,12 +103,14 @@ export async function GET() {
     // Skip header row, start from index 1
     for (let i = 1; i < values.length; i++) {
       const row = values[i];
-      if (row && row.length >= 4 && row[0] && row[1]) { // username, password, utmId, name
+      if (row && row.length >= 4 && row[0]) { // Must have at least username (column A)
         users.push({
-          username: row[0],
-          password: row[1],
-          utmId: row[2] || '',
-          name: row[3] || ''
+          id: row[0] || '',            // Use username as ID
+          username: row[0] || '',       // A: Username
+          password: row[1] || '',       // B: Password
+          utmId: row[2] || '',         // C: utmid
+          name: row[3] || '',          // D: Name
+          ratePerLead: row[4] || 45    // E: Rate (default to 45)
         });
       }
     }
