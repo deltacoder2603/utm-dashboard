@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,6 @@ interface UTMData {
 }
 
 export default function AccountPage() {
-  const { user } = useAuth();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [utmData, setUtmData] = useState<UTMData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,6 +39,12 @@ export default function AccountPage() {
 
   // Load user information from Google Sheet
   const loadUserInfo = async () => {
+    if (typeof window === 'undefined') return;
+    
+    const savedUser = localStorage.getItem('user');
+    if (!savedUser) return;
+    
+    const user = JSON.parse(savedUser);
     if (!user?.username) return;
     
     try {
@@ -52,6 +56,7 @@ export default function AccountPage() {
         
         // The API returns 'users' array from User_Registrations sheet
         const userData = data.users?.find((userRecord: { username: string; name?: string; email?: string; socialMedia?: string; mobile?: string; password?: string; approved?: boolean }) => userRecord.username === user.username);
+
         
         console.log('Found user data:', userData); // Debug log
         
@@ -94,6 +99,12 @@ export default function AccountPage() {
 
   // Load UTM data to get actual rate per lead
   const loadUTMData = async () => {
+    if (typeof window === 'undefined') return;
+    
+    const savedUser = localStorage.getItem('user');
+    if (!savedUser) return;
+    
+    const user = JSON.parse(savedUser);
     if (!user?.utmId) return;
     
     try {
@@ -105,6 +116,7 @@ export default function AccountPage() {
         // Find the user's UTM data and update the rate
         if (data.leads && data.leads.length > 0) {
           const userUTM = data.leads.find((lead: { utmId: string; ratePerLead?: number }) => lead.utmId === user.utmId);
+
           if (userUTM && userUTM.ratePerLead) {
             setUserInfo(prev => prev ? {
               ...prev,
@@ -119,11 +131,32 @@ export default function AccountPage() {
   };
 
   useEffect(() => {
-    if (user) {
-      loadUserInfo();
-      loadUTMData();
-    }
-  }, [user]);
+    // Check authentication directly from localStorage
+    const checkAuth = () => {
+      if (typeof window !== 'undefined') {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          // Check if it's a regular user (not admin)
+          if (userData.username === 'admin' && userData.isAdmin === true) {
+            // This is an admin user, redirect to admin dashboard
+            window.location.href = '/admin';
+            return;
+          } else {
+            // This is a regular user, load account data
+            loadUserInfo();
+            loadUTMData();
+            return;
+          }
+        } else {
+          // No user found, redirect to login
+          window.location.href = '/login';
+        }
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -246,18 +279,18 @@ export default function AccountPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">UTM ID</label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 text-gray-900 bg-gray-50 px-4 py-3 rounded-lg border border-gray-300 font-mono text-sm">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div className="flex-1 text-gray-900 bg-gray-50 px-4 py-3 rounded-lg border border-gray-300 font-mono text-sm break-all whitespace-normal min-h-[3rem] flex items-center">
                       {userInfo.utmId}
                     </div>
                     <Button
                       onClick={() => copyToClipboard(userInfo.utmId!)}
                       variant="outline"
                       size="sm"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 whitespace-nowrap"
                     >
                       {copyStatus === 'copied' ? (
                         <>
@@ -273,10 +306,18 @@ export default function AccountPage() {
                     </Button>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rate per Lead</label>
-                  <div className="text-gray-900 bg-gray-50 px-4 py-3 rounded-lg border border-gray-300">
-                    ₹{userInfo.ratePerLead || 45}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Rate per Lead</label>
+                    <div className="text-gray-900 bg-gray-50 px-4 py-3 rounded-lg border border-gray-300">
+                      ₹{userInfo.ratePerLead || 45}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
+                    <div className="text-gray-900 bg-gray-50 px-4 py-3 rounded-lg border border-gray-300">
+                      {userInfo?.withdraw === 'Yes' ? 'Premium' : 'Standard'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -295,7 +336,7 @@ export default function AccountPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Approval Status</label>
                 <div className="flex items-center gap-2">
@@ -307,18 +348,10 @@ export default function AccountPage() {
                   </Badge>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
-                <div className="text-gray-900 bg-gray-50 px-4 py-3 rounded-lg border border-gray-300">
-                  {userInfo?.withdraw === 'Yes' ? 'Premium' : 'Standard'}
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
-
     </SharedLayout>
   );
 }

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     console.log('=== Approve User API Called ===');
     
     const body = await request.json();
-    const { username, utmId, ratePerLead } = body;
+    const { username, utmId, ratePerLead, leadsCount } = body;
     
     if (!username) {
       return NextResponse.json(
@@ -44,6 +44,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (leadsCount === undefined || leadsCount < 0) {
+      return NextResponse.json(
+        { error: 'Valid leads count is required for approval' },
+        { status: 400 }
+      );
+    }
+
     console.log(`Attempting to approve user: ${username} with UTM ID: ${utmId}`);
 
     // Get Google Sheets client
@@ -53,7 +60,7 @@ export async function POST(request: NextRequest) {
     // First, find the row number for the user and get their details
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-      range: 'User_Registrations!A:G',
+      range: 'User_Registrations!A:H',
     });
 
     const rows = response.data.values;
@@ -64,19 +71,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the row index for the username (column E) and get user details
+    // Find the row index for the username (column F) and get user details
     let userRowIndex = -1;
     let userDetails = null;
     for (let i = 1; i < rows.length; i++) {
-      if (rows[i][4] === username) { // Column E (index 4) contains username
+      if (rows[i][5] === username) { // Column F (index 5) contains username
         userRowIndex = i + 1; // Google Sheets is 1-indexed
         userDetails = {
           name: rows[i][0],      // Column A: Name
           email: rows[i][1],     // Column B: Email
           socialMedia: rows[i][2], // Column C: Social Media
-          mobile: rows[i][3],    // Column D: Mobile
-          username: rows[i][4],  // Column E: Username
-          password: rows[i][5],  // Column F: Password
+          utmLink: rows[i][3],   // Column D: UTM Link
+          mobile: rows[i][4],    // Column E: Mobile
+          username: rows[i][5],  // Column F: Username
+          password: rows[i][6],  // Column G: Password
         };
         break;
       }
@@ -141,17 +149,17 @@ export async function POST(request: NextRequest) {
           // Insert after the last UTM data row
           const insertRow = lastUTMRowIndex + 2; // +2 because sheets are 1-indexed and we want to insert after
           
-          // Insert the new UTM ID with 0 leads in column C and rate in column D
+          // Insert the new UTM ID with leads count from input in column C and rate in column D
           await sheets.spreadsheets.values.update({
             spreadsheetId: SHEET_IDS.UTM_SHEET_ID,
             range: `summary!A${insertRow}`,
             valueInputOption: 'RAW',
             requestBody: {
-              values: [['', utmId, 0, ratePerLead]] // Empty A, UTM ID in B, 0 leads in C, Rate in D
+              values: [['', utmId, leadsCount, ratePerLead]] // Empty A, UTM ID in B, leads count in C, Rate in D
             }
           });
 
-          console.log(`New UTM ID ${utmId} inserted to summary sheet at row ${insertRow} with rate ${ratePerLead} and 0 leads`);
+          console.log(`New UTM ID ${utmId} inserted to summary sheet at row ${insertRow} with rate ${ratePerLead} and ${leadsCount} leads`);
         } else {
           // If no rows exist, insert after header row
           await sheets.spreadsheets.values.update({
@@ -159,11 +167,11 @@ export async function POST(request: NextRequest) {
             range: 'summary!A11', // After header row (row 10)
             valueInputOption: 'RAW',
             requestBody: {
-              values: [['', utmId, 0, ratePerLead]] // Empty A, UTM ID in B, 0 leads in C, Rate in D
+              values: [['', utmId, leadsCount, ratePerLead]] // Empty A, UTM ID in B, leads count in C, Rate in D
             }
           });
 
-          console.log(`New UTM ID ${utmId} inserted to summary sheet at row 11 with rate ${ratePerLead} and 0 leads`);
+          console.log(`New UTM ID ${utmId} inserted to summary sheet at row 11 with rate ${ratePerLead} and ${leadsCount} leads`);
         }
       }
     } catch (utmError) {
@@ -198,11 +206,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 2: Update the Approved column (column G) in User_Registrations
+    // Step 2: Update the Approved column (column H) in User_Registrations
     try {
       const updateResult = await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-        range: `User_Registrations!G${userRowIndex}`,
+        range: `User_Registrations!H${userRowIndex}`,
         valueInputOption: 'RAW',
         requestBody: {
           values: [['Yes']]

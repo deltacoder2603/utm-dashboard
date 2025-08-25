@@ -298,12 +298,287 @@ select:focus {
   @apply text-2xl md:text-3xl lg:text-4xl;
 }
 
+/* Custom scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.scrollbar-track-gray-800::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.scrollbar-thumb-gray-500::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
 .text-responsive-lg {
   @apply text-xl md:text-2xl lg:text-3xl;
 }
 
 .text-responsive-base {
   @apply text-base md:text-lg lg:text-xl;
+}
+
+/* Mobile-first responsive utilities */
+/* Overflow prevention utilities */
+.overflow-safe {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.overflow-mobile {
+  @apply overflow-x-auto;
+}
+
+.overflow-desktop {
+  @apply overflow-visible;
+}
+
+/* Container constraints */
+.container-constrain {
+  @apply max-w-full;
+}
+
+/* Enhanced tab styling */
+.tabs-enhanced {
+  @apply bg-gray-50 border border-gray-200 rounded-xl p-1 gap-1 shadow-sm;
+}
+
+/* Modern tab design */
+.tabs-modern {
+  @apply flex w-full bg-transparent border-b border-gray-200 gap-0 p-0;
+}
+
+.tab-trigger-modern {
+  @apply flex items-center gap-3 px-6 py-4 text-sm font-medium text-gray-600 border-b-2 border-transparent transition-all duration-300 hover:text-gray-800 hover:bg-gray-50/50 rounded-t-lg;
+}
+
+.tab-trigger-active-blue {
+  @apply text-blue-600 border-blue-600 bg-blue-50/50;
+}
+
+.tab-trigger-active-orange {
+  @apply text-orange-600 border-orange-600 bg-orange-50/50;
+}
+
+.tab-trigger-active-green {
+  @apply text-green-600 border-green-600 bg-green-50/50;
+}
+
+.tab-trigger-active-purple {
+  @apply text-purple-600 border-purple-600 bg-purple-50/50;
+}
+
+.tab-badge-modern {
+  @apply absolute -top-2 -right-2 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center;
+}
+
+.tab-badge-orange {
+  @apply bg-orange-500;
+}
+
+.tab-badge-green {
+  @apply bg-green-500;
+}
+
+.tab-badge-purple {
+  @apply bg-purple-500;
+}
+
+.tab-trigger-enhanced {
+  @apply flex items-center justify-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200;
+}
+
+.tab-trigger-active {
+  @apply bg-white shadow-sm;
+}
+
+.tab-trigger-hover {
+  @apply hover:bg-gray-100;
+}
+
+.tab-badge {
+  @apply px-2 py-0.5 rounded-full text-xs font-medium ml-1;
+}
+
+.tab-badge-pending {
+  @apply bg-orange-100 text-orange-600;
+}
+
+.tab-badge-approved {
+  @apply bg-green-100 text-green-600;
+}
+
+.tab-badge-withdrawals {
+  @apply bg-purple-100 text-purple-600;
+}
+
+.text-truncate-mobile {
+  @apply truncate;
+}
+
+.text-truncate-desktop {
+  @apply truncate;
+}
+.container-responsive {
+  @apply w-full px-4 sm:px-6 lg:px-8;
+}
+
+.text-mobile-xl {
+  @apply text-xl sm:text-2xl lg:text-3xl;
+}
+
+.text-mobile-lg {
+  @apply text-lg sm:text-xl lg:text-2xl;
+}
+
+.text-mobile-base {
+  @apply text-base sm:text-lg;
+}
+
+.text-mobile-sm {
+  @apply text-sm sm:text-base;
+}
+
+.text-mobile-xs {
+  @apply text-xs sm:text-sm;
+}
+
+/* Responsive spacing */
+.space-mobile {
+  @apply space-y-4 sm:space-y-6 lg:space-y-8;
+}
+
+.gap-mobile {
+  @apply gap-4 sm:gap-6 lg:gap-8;
+}
+
+.p-mobile {
+  @apply p-4 sm:p-6 lg:p-8;
+}
+
+.px-mobile {
+  @apply px-4 sm:px-6 lg:px-8;
+}
+
+.py-mobile {
+  @apply py-4 sm:py-6 lg:py-8;
+}
+
+.m-mobile {
+  @apply m-4 sm:m-6 lg:m-8;
+}
+
+.mx-mobile {
+  @apply mx-4 sm:mx-6 lg:mx-8;
+}
+
+.my-mobile {
+  @apply my-4 sm:my-6 lg:my-8;
+}
+
+/* Responsive grid layouts */
+.grid-mobile {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+}
+
+.grid-mobile-2 {
+  @apply grid grid-cols-1 sm:grid-cols-2;
+}
+
+.grid-mobile-3 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.grid-mobile-4 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+}
+
+/* Responsive flexbox */
+.flex-mobile-col {
+  @apply flex flex-col sm:flex-row;
+}
+
+.flex-mobile-wrap {
+  @apply flex flex-wrap gap-4 sm:gap-6;
+}
+
+/* Responsive visibility */
+.hidden-mobile {
+  @apply hidden sm:block;
+}
+
+.visible-mobile {
+  @apply block sm:hidden;
+}
+
+.hidden-tablet {
+  @apply hidden md:block;
+}
+
+.visible-tablet {
+  @apply block md:hidden;
+}
+
+/* Touch-friendly button sizes */
+.btn-mobile {
+  @apply min-h-[44px] px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base;
+}
+
+/* Responsive card layouts */
+.card-mobile {
+  @apply p-4 sm:p-6 lg:p-8;
+}
+
+/* Responsive form elements */
+.input-mobile {
+  @apply px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base;
+}
+
+/* Responsive navigation */
+.nav-mobile {
+  @apply fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0;
+}
+
+/* Responsive sidebar */
+.sidebar-mobile {
+  @apply w-64 bg-gray-900 text-white h-full overflow-y-auto shadow-xl;
+}
+
+/* Responsive main content */
+.main-mobile {
+  @apply flex-1 lg:ml-64;
+}
+
+/* Responsive header */
+.header-mobile {
+  @apply px-4 sm:px-6 lg:px-8 py-4;
+}
+
+/* Responsive content padding */
+.content-mobile {
+  @apply p-4 sm:p-6 lg:p-8;
 }
 
 /* Hover effects */

@@ -6,13 +6,13 @@ import { User, Mail, Link, Phone, Lock, ArrowRight, Sparkles, Shield, Zap, Check
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     socialMediaLink: '',
+    utmLink: '',
     mobileNumber: '',
     username: '',
     password: '',
@@ -92,48 +92,48 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-emerald-50 to-green-100">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-gradient-to-br from-slate-50 via-emerald-50 to-green-100">
       {/* Left Side - Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 order-2 lg:order-1">
         <div className="max-w-md w-full">
           {/* Header */}
-          <div className="text-center mb-10">
-            <div className="relative mx-auto h-20 w-20 bg-gradient-to-br from-green-600 via-emerald-600 to-green-800 rounded-3xl shadow-2xl mb-6 flex items-center justify-center group">
-              <User className="h-10 w-10 text-white group-hover:scale-110 transition-transform duration-300" />
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center">
-                <Sparkles className="h-3 w-3 text-white" />
+          <div className="text-center mb-8 sm:mb-10">
+            <div className="relative mx-auto h-16 w-16 sm:h-20 sm:w-20 bg-gradient-to-br from-green-600 via-emerald-600 to-green-800 rounded-3xl shadow-2xl mb-4 sm:mb-6 flex items-center justify-center group">
+              <User className="h-8 w-8 sm:h-10 sm:w-10 text-white group-hover:scale-110 transition-transform duration-300" />
+              <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center">
+                <Sparkles className="h-2 w-2 sm:h-3 sm:w-3 text-white" />
               </div>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-3 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
               Create Account
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-base sm:text-lg text-gray-600">
               Join our UTM leads tracking platform
             </p>
           </div>
           
           {/* Form */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8 relative overflow-hidden">
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-6 sm:p-8 relative overflow-hidden">
             {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full -translate-y-16 translate-x-16 opacity-50"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full translate-y-12 -translate-x-12 opacity-50"></div>
+            <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16 opacity-50"></div>
+            <div className="absolute bottom-0 left-0 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full translate-y-8 sm:translate-y-12 -translate-x-8 sm:-translate-x-12 opacity-50"></div>
             
-            <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
+            <form className="space-y-4 sm:space-y-6 relative z-10" onSubmit={handleSubmit}>
               {/* Name Field */}
               <div className="group">
                 <Label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
                   Full Name
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                    <User className="h-5 w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none z-10">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
                   </div>
                   <Input
                     id="name"
                     name="name"
                     type="text"
                     required
-                    className="pl-12 py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md"
+                    className="pl-10 sm:pl-12 py-3 sm:py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
                     placeholder="Enter your full name"
                     value={formData.name}
                     onChange={handleInputChange}
@@ -147,15 +147,15 @@ export default function RegisterPage() {
                   Email Address
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                    <Mail className="h-5 w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none z-10">
+                    <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
                   </div>
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     required
-                    className="pl-12 py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md"
+                    className="pl-10 sm:pl-12 py-3 sm:py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
                     placeholder="Enter your email address"
                     value={formData.email}
                     onChange={handleInputChange}
@@ -169,16 +169,38 @@ export default function RegisterPage() {
                   Social Media Link
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                    <Link className="h-5 w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none z-10">
+                    <Link className="h-4 w-4 sm:h-5 sm:w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
                   </div>
                   <Input
                     id="socialMediaLink"
                     name="socialMediaLink"
                     type="url"
-                    className="pl-12 py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md"
+                    className="pl-10 sm:pl-12 py-3 sm:py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
                     placeholder="https://instagram.com/username"
                     value={formData.socialMediaLink}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+
+              {/* UTM Link Field */}
+              <div className="group">
+                <Label htmlFor="utmLink" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
+                  UTM Link <span className="text-xs text-gray-500">(This will be your UTM ID)</span>
+                </Label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none z-10">
+                    <Link className="h-4 w-4 sm:h-5 sm:w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
+                  </div>
+                  <Input
+                    id="utmLink"
+                    name="utmLink"
+                    type="url"
+                    required
+                    className="pl-10 sm:pl-12 py-3 sm:py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
+                    placeholder="https://example.com?utm_source=yourname"
+                    value={formData.utmLink}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -190,15 +212,15 @@ export default function RegisterPage() {
                   Mobile Number
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                    <Phone className="h-5 w-5 text-gray-900 group-hover:text-green-500 transition-transform duration-200" />
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none z-10">
+                    <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-gray-900 group-hover:text-green-500 transition-transform duration-200" />
                   </div>
                   <Input
                     id="mobileNumber"
                     name="mobileNumber"
                     type="tel"
                     required
-                    className="pl-12 py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md"
+                    className="pl-10 sm:pl-12 py-3 sm:py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
                     placeholder="+91-9876543210"
                     value={formData.mobileNumber}
                     onChange={handleInputChange}
@@ -212,15 +234,15 @@ export default function RegisterPage() {
                   Username
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                    <User className="h-5 w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none z-10">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
                   </div>
                   <Input
                     id="username"
                     name="username"
                     type="text"
                     required
-                    className="pl-12 py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md"
+                    className="pl-10 sm:pl-12 py-3 sm:py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
                     placeholder="Choose a username"
                     value={formData.username}
                     onChange={handleInputChange}
@@ -234,15 +256,15 @@ export default function RegisterPage() {
                   Password
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                    <Lock className="h-5 w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none z-10">
+                    <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
                   </div>
                   <Input
                     id="password"
                     name="password"
                     type="password"
                     required
-                    className="pl-12 py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md"
+                    className="pl-10 sm:pl-12 py-3 sm:py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
                     placeholder="Create a password"
                     value={formData.password}
                     onChange={handleInputChange}
@@ -256,15 +278,15 @@ export default function RegisterPage() {
                   Confirm Password
                 </Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                    <Lock className="h-5 w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none z-10">
+                    <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-gray-900 group-hover:text-green-500 transition-colors duration-200" />
                   </div>
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
                     required
-                    className="pl-12 py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md"
+                    className="pl-10 sm:pl-12 py-3 sm:py-4 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 focus:bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
@@ -274,7 +296,7 @@ export default function RegisterPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="rounded-2xl bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 p-4 transform animate-in slide-in-from-top-2 duration-300">
+                <div className="rounded-2xl bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 p-3 sm:p-4 transform animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-red-500 rounded-full mr-3 animate-pulse"></div>
                     <h3 className="text-sm font-medium text-red-800">
@@ -286,7 +308,7 @@ export default function RegisterPage() {
 
               {/* Success Message */}
               {success && (
-                <div className="rounded-2xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-4 transform animate-in slide-in-from-top-2 duration-300">
+                <div className="rounded-2xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-3 sm:p-4 transform animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
                     <h3 className="text-sm font-medium text-green-800">
@@ -297,21 +319,21 @@ export default function RegisterPage() {
               )}
 
               {/* Submit Button */}
-              <div className="pt-4">
+              <div className="pt-2 sm:pt-4">
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="group relative w-full flex justify-center items-center py-4 px-6 text-base font-semibold rounded-2xl bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 hover:from-green-700 hover:via-emerald-700 hover:to-green-800 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-[1.02]"
+                  className="group relative w-full flex justify-center items-center py-3 sm:py-4 px-6 text-sm sm:text-base font-semibold rounded-2xl bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 hover:from-green-700 hover:via-emerald-700 hover:to-green-800 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-[1.02]"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent"></div>
                       <span>Creating Account...</span>
                     </div>
                   ) : (
                     <>
                       Create Account
-                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                      <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-300" />
                     </>
                   )}
                 </Button>
@@ -319,7 +341,7 @@ export default function RegisterPage() {
 
               {/* Login Link */}
               <div className="text-center pt-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-xs sm:text-sm text-gray-600">
                   Already have an account?{' '}
                   <button
                     type="button"
@@ -336,7 +358,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Right Side - Visual */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-600 via-emerald-600 to-green-800 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-600 via-emerald-600 to-green-800 relative overflow-hidden order-1 lg:order-2">
         {/* Animated background elements */}
         <div className="absolute inset-0">
           <div className="absolute top-20 right-20 w-32 h-32 bg-white/10 rounded-full animate-pulse"></div>

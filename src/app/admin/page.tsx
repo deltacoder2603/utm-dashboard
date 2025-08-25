@@ -1,14 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Check, Clock, AlertCircle, Target, Users, DollarSign, Clock3, TrendingUp, BarChart3, UserCheck, LogOut, RefreshCw, X, Edit } from 'lucide-react';
+import { Copy, Check, Clock, AlertCircle, Target, Users, DollarSign, Clock3, TrendingUp, BarChart3, UserCheck, LogOut, RefreshCw, X, Edit, ChevronDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 
 interface UTMData {
   totalLeads: number;
@@ -26,6 +24,7 @@ interface UserRegistration {
   name: string;
   email: string;
   socialMedia: string;
+  utmLink: string;
   mobile: string;
   username: string;
   approved: boolean;
@@ -65,8 +64,8 @@ export default function AdminPage() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [showUtmDialog, setShowUtmDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserRegistration | null>(null);
-  const [utmIdInput, setUtmIdInput] = useState('');
   const [ratePerLeadInput, setRatePerLeadInput] = useState('45');
+  const [leadsInput, setLeadsInput] = useState('0');
   const [copyStatus, setCopyStatus] = useState<{ [key: string]: 'idle' | 'copied' }>({});
   const [editingUTM, setEditingUTM] = useState<{utmId: string; count: number; earnings: number} | null>(null);
   const [editUTMData, setEditUTMData] = useState<{utmId: string; count: number; earnings: number; ratePerLead: number}>({
@@ -75,6 +74,7 @@ export default function AdminPage() {
     earnings: 0, 
     ratePerLead: 45
   });
+
   const router = useRouter();
 
   useEffect(() => {
@@ -153,19 +153,24 @@ export default function AdminPage() {
   // Show UTM ID dialog for approval
   const handleApproveClick = (user: UserRegistration) => {
     setSelectedUser(user);
-    setUtmIdInput('');
     setRatePerLeadInput('45'); // Reset to default rate
+    setLeadsInput('0'); // Reset leads input
     setShowUtmDialog(true);
   };
 
-  // Approve a user with UTM ID and rate
+  // Approve a user with UTM link, leads count and rate
   const handleApproveUser = async () => {
-    if (!selectedUser || !utmIdInput.trim()) {
-      alert('Please enter a UTM ID');
+    if (!selectedUser) {
+      alert('No user selected');
       return;
     }
 
-    if (!ratePerLeadInput.trim() || isNaN(parseInt(ratePerLeadInput))) {
+    if (!leadsInput.trim() || isNaN(parseInt(leadsInput)) || parseInt(leadsInput) < 0) {
+      alert('Please enter a valid number of leads');
+      return;
+    }
+
+    if (!ratePerLeadInput.trim() || isNaN(parseInt(ratePerLeadInput)) || parseInt(ratePerLeadInput) <= 0) {
       alert('Please enter a valid rate per lead');
       return;
     }
@@ -179,18 +184,18 @@ export default function AdminPage() {
         },
         body: JSON.stringify({ 
           username: selectedUser.username,
-          utmId: utmIdInput.trim(),
-          ratePerLead: parseInt(ratePerLeadInput)
+          utmId: selectedUser.utmLink, // Use UTM link from registration as UTM ID
+          ratePerLead: parseInt(ratePerLeadInput),
+          leadsCount: parseInt(leadsInput)
         }),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        alert(`User ${selectedUser.username} approved successfully!\n\nUTM ID: ${utmIdInput.trim()}\nRate per Lead: ₹${ratePerLeadInput}`);
+        alert(`User ${selectedUser.username} approved successfully!\n\nUTM Link: ${selectedUser.utmLink}\nLeads Count: ${leadsInput}\nRate per Lead: ₹${ratePerLeadInput}`);
         setShowUtmDialog(false);
         setSelectedUser(null);
-        setUtmIdInput('');
         setRatePerLeadInput('45');
+        setLeadsInput('0');
         await fetchData(); // Reload data
       } else {
         const errorData = await response.json();
@@ -436,10 +441,10 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading admin dashboard...</p>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600">Loading admin dashboard...</p>
         </div>
       </div>
     );
@@ -448,32 +453,33 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm shadow-xl border border-white/20 p-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center">
-              <Target className="h-6 w-6 text-white" />
+      <div className="bg-white shadow-lg rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center">
+              <Target className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-              <p className="text-gray-600">Manage your UTM platform</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage your UTM platform</p>
               {lastRefresh && (
-                <p className="text-sm text-gray-500">Last updated: {lastRefresh.toLocaleTimeString()}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Last updated: {lastRefresh.toLocaleTimeString()}</p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={fetchData}
               disabled={loading}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 disabled:opacity-50"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 text-sm sm:text-base"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh Data
+              <span className="hidden sm:inline">Refresh Data</span>
+              <span className="sm:hidden">Refresh</span>
             </button>
             <button
               onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200"
+              className="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 text-sm sm:text-base"
             >
               <LogOut className="w-4 h-4" />
               Logout
@@ -491,62 +497,62 @@ export default function AdminPage() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20">
-          <CardContent className="p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <Card className="bg-white shadow-lg border-0 rounded-2xl">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total UTM Leads</p>
-                <p className="text-2xl font-bold text-blue-600">{utmData?.totalLeads || 0}</p>
-                <p className="text-sm text-gray-500">Active campaigns</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Total UTM Leads</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">{utmData?.totalLeads || 0}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Active campaigns</p>
               </div>
-              <div className="h-12 w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-white" />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20">
-          <CardContent className="p-6">
+        <Card className="bg-white shadow-lg border-0 rounded-2xl">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-                <p className="text-2xl font-bold text-green-600">₹{utmData?.totalEarnings || 0}</p>
-                <p className="text-sm text-gray-500">Revenue generated</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Total Earnings</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">₹{utmData?.totalEarnings || 0}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Revenue generated</p>
               </div>
-              <div className="h-12 w-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-white" />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center">
+                <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20">
-          <CardContent className="p-6">
+        <Card className="bg-white shadow-lg border-0 rounded-2xl">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-                <p className="text-2xl font-bold text-orange-600">{pendingUsers.length}</p>
-                <p className="text-sm text-gray-500">Awaiting review</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Pending Approvals</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">{pendingUsers.length}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Awaiting review</p>
               </div>
-              <div className="h-12 w-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-white" />
-              </div>
+                              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20">
-          <CardContent className="p-6">
+        <Card className="bg-white shadow-lg border-0 rounded-2xl">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Withdrawal Requests</p>
-                <p className="text-2xl font-bold text-purple-600">{withdrawalRequests.length}</p>
-                <p className="text-sm text-gray-500">Pending review</p>
-              </div>
-              <div className="h-12 w-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center">
-                <Clock3 className="h-6 w-6 text-white" />
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Withdrawal Requests</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">{withdrawalRequests.length}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Pending review</p>
+                </div>
+              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center">
+                <Clock3 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
           </CardContent>
@@ -554,44 +560,128 @@ export default function AdminPage() {
       </div>
 
       {/* Main Content Tabs */}
-      <Card className="bg-white/80 backdrop-blur-sm border-white/20 p-8">
-                  <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'utm' | 'pending' | 'approved' | 'withdrawals')}>
-          <TabsList className="grid w-full grid-cols-5 bg-gray-100">
-            <TabsTrigger value="utm" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              UTM Data
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Pending Users ({pendingUsers.length})
-            </TabsTrigger>
-            <TabsTrigger value="approved" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Approved Users ({approvedUsers.length})
-            </TabsTrigger>
-            <TabsTrigger value="money-withdrawals" className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              Money Withdrawals ({moneyWithdrawalRequests.length})
-            </TabsTrigger>
-          </TabsList>
+      <Card className="bg-white shadow-lg border-0 rounded-2xl overflow-hidden">
+        <div className="w-full">
+          {/* Tab Selector Dropdown */}
+          <div className="relative mb-6">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-full sm:w-auto flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-left hover:bg-gray-100 transition-all duration-200">
+              <div className="flex items-center gap-3">
+                {activeTab === 'utm' && (
+                  <>
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                    <span className="font-medium text-gray-900">UTM Data</span>
+                  </>
+                )}
+                {activeTab === 'pending' && (
+                  <>
+                    <Clock className="w-5 h-5 text-orange-600" />
+                    <span className="font-medium text-gray-900">Pending Users</span>
+                    {pendingUsers.length > 0 && (
+                      <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+                        {pendingUsers.length}
+                      </span>
+                    )}
+                  </>
+                )}
+                {activeTab === 'approved' && (
+                  <>
+                    <Users className="w-5 h-5 text-green-600" />
+                    <span className="font-medium text-gray-900">Approved Users</span>
+                    {approvedUsers.length > 0 && (
+                      <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+                        {approvedUsers.length}
+                      </span>
+                    )}
+                  </>
+                )}
+                {activeTab === 'money-withdrawals' && (
+                  <>
+                    <DollarSign className="w-5 h-5 text-purple-600" />
+                    <span className="font-medium text-gray-900">Money Withdrawals</span>
+                    {moneyWithdrawalRequests.length > 0 && (
+                      <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+                        {moneyWithdrawalRequests.length}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+                </button>
+              </DropdownMenuTrigger>
+            
+              <DropdownMenuContent className="w-64 p-2">
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('utm')}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer"
+                  >
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                    <span className="font-medium">UTM Data</span>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('pending')}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer"
+                  >
+                    <Clock className="w-5 h-5 text-orange-600" />
+                    <span className="font-medium">Pending Users</span>
+                    {pendingUsers.length > 0 && (
+                      <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center ml-auto">
+                        {pendingUsers.length}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('approved')}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer"
+                  >
+                    <Users className="w-5 h-5 text-green-600" />
+                    <span className="font-medium">Approved Users</span>
+                    {approvedUsers.length > 0 && (
+                      <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center ml-auto">
+                        {approvedUsers.length}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('money-withdrawals')}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer"
+                  >
+                    <DollarSign className="w-5 h-5 text-purple-600" />
+                    <span className="font-medium">Money Withdrawals</span>
+                    {moneyWithdrawalRequests.length > 0 && (
+                      <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center ml-auto">
+                        {moneyWithdrawalRequests.length}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+
+
 
         {/* Tab Content */}
-        <TabsContent value="utm" className="mt-6">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">UTM Campaign Data</h3>
+        {activeTab === 'utm' && (
+          <div className="p-6 sm:p-8">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-4">UTM Campaign Data</h3>
             {utmData && utmData.leads && utmData.leads.length > 0 ? (
               <div className="space-y-4">
                 {utmData.leads.map((lead, index) => {
                   const ratePerLead = lead.ratePerLead || 45; // Use rate from UTM data
                   return (
-                    <div key={index} className="bg-gray-50/50 rounded-2xl p-6 border border-gray-200/50">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4 flex-1">
-                          <div className="h-12 w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
-                            <Target className="h-6 w-6 text-white" />
+                    <div key={index} className="bg-gray-50/50 rounded-2xl p-4 sm:p-6 border border-gray-200/50">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                        <div className="flex items-start gap-3 sm:gap-4 flex-1">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
+                            <Target className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                           </div>
                           <div className="flex-1">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                               <div>
                                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">UTM ID</label>
                                 <p className="font-semibold text-gray-900 break-all">{lead.utmId}</p>
@@ -611,7 +701,7 @@ export default function AdminPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
+                        <div className="flex items-center gap-2 sm:ml-4">
                           <button
                             onClick={() => copyUTMId(lead.utmId, lead.utmId)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
@@ -646,10 +736,10 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="pending" className="mt-6">
-          <div>
+        {activeTab === 'pending' && (
+          <div className="overflow-x-auto p-6 sm:p-8">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-orange-500" />
               Pending User Approvals
@@ -657,22 +747,27 @@ export default function AdminPage() {
             {pendingUsers.length > 0 ? (
               <div className="space-y-4">
                 {pendingUsers.map((user) => (
-                  <div key={user.id} className="bg-gray-50/50 rounded-2xl p-6 border border-gray-200/50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
-                          <Users className="h-6 w-6 text-white" />
+                  <div key={user.id} className="bg-gray-50/50 rounded-2xl p-4 sm:p-6 border border-gray-200/50">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                      <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="space-y-1">
-                          <p className="font-semibold text-gray-900">{user.name}</p>
-                          <p className="text-sm text-gray-600">@{user.username}</p>
-                          <p className="text-sm text-gray-600">{user.email}</p>
-                          <p className="text-sm text-gray-600">{user.mobile}</p>
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{user.name}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">@{user.username}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 truncate">{user.email}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">{user.mobile}</p>
                           {user.socialMedia && (
-                            <p className="text-sm text-blue-600">
+                            <p className="text-xs sm:text-sm text-blue-600 truncate">
                               <a href={user.socialMedia} target="_blank" rel="noopener noreferrer" className="hover:underline">
                                 {user.socialMedia}
                               </a>
+                            </p>
+                          )}
+                          {user.utmLink && (
+                            <p className="text-xs sm:text-sm text-purple-600 truncate">
+                              <span className="font-medium">UTM Link:</span> {user.utmLink}
                             </p>
                           )}
                         </div>
@@ -680,16 +775,16 @@ export default function AdminPage() {
                       <button
                         onClick={() => handleApproveClick(user)}
                         disabled={approving === user.username}
-                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
+                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 text-xs sm:text-sm w-full lg:w-auto justify-center"
                       >
                         {approving === user.username ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                            <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
                             Processing...
                           </>
                         ) : (
                           <>
-                            <UserCheck className="w-4 h-4" />
+                            <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />
                             Approve User
                           </>
                         )}
@@ -708,10 +803,10 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="approved" className="mt-6">
-          <div>
+        {activeTab === 'approved' && (
+          <div className="overflow-x-auto p-6 sm:p-8">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Users className="w-5 h-5 text-green-500" />
               Approved Users
@@ -719,39 +814,44 @@ export default function AdminPage() {
             {approvedUsers.length > 0 ? (
               <div className="space-y-4">
                 {approvedUsers.map((user) => (
-                  <div key={user.id} className="bg-gray-50/50 rounded-2xl p-6 border border-gray-200/50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center">
-                          <Check className="h-6 w-6 text-white" />
+                  <div key={user.id} className="bg-gray-50/50 rounded-2xl p-4 sm:p-6 border border-gray-200/50">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                      <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Check className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="space-y-1">
-                          <p className="font-semibold text-gray-900">{user.name}</p>
-                          <p className="text-sm text-gray-600">@{user.username}</p>
-                          <p className="text-sm text-gray-600">{user.email}</p>
-                          <p className="text-sm text-gray-600">{user.mobile}</p>
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{user.name}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">@{user.username}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 truncate">{user.email}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">{user.mobile}</p>
                           {user.socialMedia && (
-                            <p className="text-sm text-blue-600">
+                            <p className="text-xs sm:text-sm text-blue-600 truncate">
                               <a href={user.socialMedia} target="_blank" rel="noopener noreferrer" className="hover:underline">
                                 {user.socialMedia}
                               </a>
                             </p>
                           )}
+                          {user.utmLink && (
+                            <p className="text-xs sm:text-sm text-purple-600 truncate">
+                              <span className="font-medium">UTM Link:</span> {user.utmLink}
+                            </p>
+                          )}
                         </div>
                       </div>
-                                            <button
+                      <button
                         onClick={() => handleRemoveUser(user.username)}
                         disabled={approving === user.username}
-                        className="bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-red-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
+                        className="bg-gradient-to-r from-red-500 to-pink-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:from-red-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 text-xs sm:text-sm w-full lg:w-auto justify-center"
                       >
                         {approving === user.username ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                            <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
                             Processing...
                           </>
                         ) : (
                           <>
-                            <UserCheck className="w-4 h-4" />
+                            <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />
                             Remove User
                           </>
                         )}
@@ -770,9 +870,9 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="withdrawals" className="mt-6">
+        {activeTab === 'withdrawals' && (
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Clock3 className="w-5 h-5 text-purple-500" />
@@ -834,10 +934,10 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="money-withdrawals" className="mt-6">
-          <div>
+        {activeTab === 'money-withdrawals' && (
+          <div className="overflow-x-auto p-6 sm:p-8">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-green-500" />
               Money Withdrawal Requests
@@ -845,30 +945,30 @@ export default function AdminPage() {
             {moneyWithdrawalRequests.length > 0 ? (
               <div className="space-y-4">
                 {moneyWithdrawalRequests.map((request, index) => (
-                  <div key={index} className="bg-gray-50/50 rounded-2xl p-6 border border-gray-200/50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center">
-                          <DollarSign className="h-6 w-6 text-white" />
+                  <div key={index} className="bg-gray-50/50 rounded-2xl p-4 sm:p-6 border border-gray-200/50">
+                    <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+                      <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="space-y-1">
-                          <p className="font-semibold text-gray-900">@{request.username}</p>
-                          <p className="text-lg font-bold text-green-600">₹{request.amount}</p>
-                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                            <div>
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base">@{request.username}</p>
+                          <p className="text-base sm:text-lg font-bold text-green-600">₹{request.amount}</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                            <div className="truncate">
                               <span className="font-medium">Bank:</span> {request.bankName}
                             </div>
-                            <div>
+                            <div className="truncate">
                               <span className="font-medium">Account:</span> ****{request.accountNumber.slice(-4)}
                             </div>
-                            <div>
+                            <div className="truncate">
                               <span className="font-medium">Holder:</span> {request.accountHolderName}
                             </div>
-                            <div>
+                            <div className="truncate">
                               <span className="font-medium">IFSC:</span> {request.ifscCode}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2">
                             <span className="text-xs text-gray-500">
                               Requested: {new Date(request.timestamp).toLocaleDateString()}
                             </span>
@@ -880,62 +980,62 @@ export default function AdminPage() {
                           </div>
                         </div>
                       </div>
-                                              <div className="flex items-center gap-3">
-                          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            request.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                            request.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {request.status}
-                          </div>
-                          {request.status === 'Pending' && (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleApproveMoneyWithdrawal(request)}
-                                disabled={approving === `${request.username}-${request.rowIndex}`}
-                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                              >
-                                {approving === `${request.username}-${request.rowIndex}` ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                    Processing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Check className="w-4 h-4" />
-                                    Approve
-                                  </>
-                                )}
-                              </button>
-                              <button
-                                onClick={() => handleRejectMoneyWithdrawal(request)}
-                                disabled={approving === `${request.username}-${request.rowIndex}`}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                              >
-                                {approving === `${request.username}-${request.rowIndex}` ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                    Processing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <X className="w-4 h-4" />
-                                    Reject
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          )}
-                          {request.status === 'Approved' && (
-                            <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                              ✓ Approved
-                            </div>
-                          )}
-                          {request.status === 'Rejected' && (
-                            <div className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
-                              ✗ Rejected
-                            </div>
-                          )}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full xl:w-auto">
+                        <div className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
+                          request.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                          request.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {request.status}
                         </div>
+                        {request.status === 'Pending' && (
+                          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            <button
+                              onClick={() => handleApproveMoneyWithdrawal(request)}
+                              disabled={approving === `${request.username}-${request.rowIndex}`}
+                              className="bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-2 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-xs sm:text-sm w-full sm:w-auto"
+                            >
+                              {approving === `${request.username}-${request.rowIndex}` ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  Approve
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleRejectMoneyWithdrawal(request)}
+                              disabled={approving === `${request.username}-${request.rowIndex}`}
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-xs sm:text-sm w-full sm:w-auto"
+                            >
+                              {approving === `${request.username}-${request.rowIndex}` ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  Reject
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                        {request.status === 'Approved' && (
+                          <div className="px-2 sm:px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium">
+                            ✓ Approved
+                          </div>
+                        )}
+                        {request.status === 'Rejected' && (
+                          <div className="px-2 sm:px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs sm:text-sm font-medium">
+                            ✗ Rejected
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -950,8 +1050,9 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        </TabsContent>
-      </Tabs>
+        )}
+        </div>
+      </div>
     </Card>
 
       {/* UTM Edit Dialog */}
@@ -1083,15 +1184,14 @@ export default function AdminPage() {
                   <Target className="h-8 w-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Approve User</h3>
-                <p className="text-gray-600">Enter UTM ID for {selectedUser.name}</p>
+                <p className="text-gray-600">Set leads count and rate for {selectedUser.name}</p>
               </div>
               <button
-                onClick={() => {
-                  setShowUtmDialog(false);
-                  setSelectedUser(null);
-                  setUtmIdInput('');
-                  setRatePerLeadInput('45');
-                }}
+                                  onClick={() => {
+                    setShowUtmDialog(false);
+                    setSelectedUser(null);
+                    setRatePerLeadInput('45');
+                  }}
                 className="p-2 hover:bg-gray-100 rounded-xl transition-colors duration-200"
               >
                 <X className="w-5 h-5 text-gray-500" />
@@ -1099,19 +1199,33 @@ export default function AdminPage() {
             </div>
             
             <div className="space-y-4">
+              {/* Display User's UTM Link */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <label className="block text-sm font-medium text-blue-700 mb-2">
+                  User&apos;s UTM Link (This will be their UTM ID)
+                </label>
+                <div className="text-sm text-blue-800 bg-white px-3 py-2 rounded-lg border border-blue-200 break-all">
+                  {selectedUser.utmLink}
+                </div>
+              </div>
+
               <div>
-                <label htmlFor="utmId" className="block text-sm font-medium text-gray-700 mb-2">
-                  UTM ID
+                <label htmlFor="leadsCount" className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of Leads
                 </label>
                 <input
-                  id="utmId"
-                  type="text"
-                  value={utmIdInput}
-                  onChange={(e) => setUtmIdInput(e.target.value)}
+                  id="leadsCount"
+                  type="number"
+                  min="0"
+                  value={leadsInput}
+                  onChange={(e) => setLeadsInput(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-gray-900 placeholder-gray-500"
-                  placeholder="Enter UTM ID (e.g., inf_username_idc004_jul25_yt_pl)"
+                  placeholder="0"
                   autoFocus
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the current number of leads for this user
+                </p>
               </div>
 
               <div>
@@ -1137,8 +1251,8 @@ export default function AdminPage() {
                   onClick={() => {
                     setShowUtmDialog(false);
                     setSelectedUser(null);
-                    setUtmIdInput('');
                     setRatePerLeadInput('45');
+                    setLeadsInput('0');
                   }}
                   className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-2xl font-medium hover:bg-gray-50 transition-all duration-300"
                 >
@@ -1146,7 +1260,7 @@ export default function AdminPage() {
                 </button>
                 <button
                   onClick={handleApproveUser}
-                  disabled={!utmIdInput.trim() || !ratePerLeadInput.trim() || approving === selectedUser.username}
+                  disabled={!leadsInput.trim() || !ratePerLeadInput.trim() || approving === selectedUser.username}
                   className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3 rounded-2xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {approving === selectedUser.username ? 'Approving...' : 'Approve User'}

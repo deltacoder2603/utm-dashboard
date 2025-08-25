@@ -23,15 +23,15 @@ export async function POST(request: NextRequest) {
     console.log('=== Registration API Called ===');
     
     const body = await request.json();
-    const { name, email, socialMediaLink, mobileNumber, username, password } = body;
+    const { name, email, socialMediaLink, utmLink, mobileNumber, username, password } = body;
     
-    console.log('Received data:', { name, email, mobileNumber, username, password: password ? '[HIDDEN]' : 'MISSING' });
+    console.log('Received data:', { name, email, mobileNumber, username, password: password ? '[HIDDEN]' : 'MISSING', utmLink });
 
     // Validation
-    if (!name || !email || !mobileNumber || !username || !password) {
+    if (!name || !email || !mobileNumber || !username || !password || !utmLink) {
       console.log('Validation failed - missing fields');
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields including UTM Link' },
         { status: 400 }
       );
     }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     try {
       // Add user to User_Registrations sheet only
       const registrationData = [
-        [name, email, socialMediaLink || '', mobileNumber, username, password, ''] // Empty UTM ID field
+        [name, email, socialMediaLink || '', utmLink, mobileNumber, username, password, ''] // UTM Link becomes UTM ID
       ];
 
       console.log('Attempting to append data to sheet:', SHEET_IDS.USERS_SHEET_ID);
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
       const appendResult = await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_IDS.USERS_SHEET_ID,
-        range: 'User_Registrations!A:G',
+        range: 'User_Registrations!A:H',
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {

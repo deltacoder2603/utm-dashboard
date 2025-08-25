@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,45 +9,52 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = () => {
-      if (requireAdmin) {
-        // Check for admin user in the main authentication system
+      if (typeof window !== 'undefined') {
         const savedUser = localStorage.getItem('user');
+        console.log('ProtectedRoute: Checking auth, savedUser:', savedUser);
+        
         if (savedUser) {
           const userData = JSON.parse(savedUser);
-          const isAdminUser = userData.username === 'admin' && userData.isAdmin === true;
+          console.log('ProtectedRoute: User data:', userData);
           
-          if (isAdminUser) {
-            setIsAuthorized(true);
-            setIsLoading(false);
-            return;
+          if (requireAdmin) {
+            // Check for admin user
+            const isAdminUser = userData.username === 'admin' && userData.isAdmin === true;
+            console.log('ProtectedRoute: Admin check, isAdminUser:', isAdminUser);
+            
+            if (isAdminUser) {
+              setIsAuthorized(true);
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            // Check for regular user (any user that's not admin)
+            const isRegularUser = userData.username !== 'admin' || !userData.isAdmin;
+            console.log('ProtectedRoute: Regular user check, isRegularUser:', isRegularUser);
+            
+            if (isRegularUser) {
+              setIsAuthorized(true);
+              setIsLoading(false);
+              return;
+            }
           }
         }
         
-        // If not admin, redirect to login
+        // If not authorized, redirect to login
+        console.log('ProtectedRoute: Not authorized, redirecting to login');
         router.push('/login');
-        return;
-      } else {
-        // Check for regular user authentication
-        if (!isAuthenticated) {
-          router.push('/login');
-          return;
-        }
-        
-        setIsAuthorized(true);
-        setIsLoading(false);
       }
     };
     
     // Add a small delay to ensure localStorage is available
     setTimeout(checkAuth, 100);
-  }, [isAuthenticated, requireAdmin, router]);
+  }, [requireAdmin, router]);
 
   if (isLoading) {
     return (

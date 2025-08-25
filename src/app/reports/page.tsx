@@ -96,10 +96,10 @@ export default function ReportsPage() {
   if (!user) {
     return (
       <SharedLayout currentPage="reports" pageTitle="Reports" pageDescription="Please log in to view reports">
-        <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h1>
-            <p className="text-gray-600">Please log in to view reports</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Authentication Required</h1>
+            <p className="text-sm sm:text-base text-gray-600">Please log in to view reports</p>
           </div>
       </div>
       </SharedLayout>
@@ -239,102 +239,104 @@ export default function ReportsPage() {
   return (
     <SharedLayout currentPage="reports" pageTitle="Reports" pageDescription="View detailed analytics and performance reports">
       {/* Reports Overview */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 bg-purple-600 rounded-2xl flex items-center justify-center">
-                  <FileText className="h-8 w-8 text-white" />
+          <CardContent className="p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                <div className="h-12 w-12 sm:h-16 sm:w-16 bg-purple-600 rounded-2xl flex items-center justify-center">
+                  <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold text-gray-900">Performance Reports</h2>
-                  <p className="text-gray-600 text-lg">Comprehensive analytics and insights for your UTM campaigns</p>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Performance Reports</h2>
+                  <p className="text-sm sm:text-base lg:text-lg text-gray-600">Comprehensive analytics and insights for your UTM campaigns</p>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-col items-center lg:items-end gap-3 w-full lg:w-auto">
                 <Button
                   onClick={generatePDFReport}
                   disabled={isGenerating || !dashboardData}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto text-sm sm:text-base"
                 >
                   {isGenerating ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                      Generating...
+                      <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      <span className="hidden sm:inline">Generating...</span>
+                      <span className="sm:hidden">Generating...</span>
                     </>
                   ) : (
                     <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Personal Report
+                      <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                      <span className="hidden sm:inline">Download Personal Report</span>
+                      <span className="sm:hidden">Download Report</span>
                     </>
                   )}
                 </Button>
-                <p className="text-xs text-purple-600 font-medium">
+                <p className="text-xs text-purple-600 font-medium text-center lg:text-right">
                   Your personal UTM performance data
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-            </div>
+      </div>
             
       {/* Report Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <Card className="bg-white border-gray-200">
-          <CardContent className="p-6 text-center">
-            <div className="h-12 w-12 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="h-6 w-6 text-white" />
-                </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Total Reports</h3>
-            <div className="text-3xl font-bold text-blue-600">3</div>
-            <p className="text-sm text-gray-600 mt-2">Available reports</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-gray-200">
-          <CardContent className="p-6 text-center">
-            <div className="h-12 w-12 bg-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <TrendingUp className="h-6 w-6 text-white" />
-              </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Last Updated</h3>
-            <div className="text-lg font-semibold text-green-600">Today</div>
-            <p className="text-sm text-gray-600 mt-2">Real-time data</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-gray-200">
-          <CardContent className="p-6 text-center">
-            <div className="h-12 w-12 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Calendar className="h-6 w-6 text-white" />
+          <CardContent className="p-4 sm:p-6 text-center">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Report Period</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Total Reports</h3>
+            <div className="text-2xl sm:text-3xl font-bold text-blue-600">3</div>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">Available reports</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-gray-200">
+          <CardContent className="p-4 sm:p-6 text-center">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-600 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Last Updated</h3>
+            <div className="text-lg font-semibold text-green-600">Today</div>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">Real-time data</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-gray-200 sm:col-span-2 lg:col-span-1">
+          <CardContent className="p-4 sm:p-6 text-center">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Report Period</h3>
             <div className="text-lg font-semibold text-purple-600">Monthly</div>
-            <p className="text-sm text-gray-600 mt-2">Current cycle</p>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">Current cycle</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Available Reports */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <Card className="bg-white border-gray-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-gray-600" />
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
               Available Reports
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <Card className="bg-blue-50 border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                      <BarChart3 className="h-5 w-5 text-white" />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-blue-900">Lead Generation Report</h3>
+                    <h3 className="text-sm sm:text-lg font-semibold text-blue-900">Lead Generation Report</h3>
                   </div>
-                  <p className="text-blue-700 text-sm mb-4">
+                  <p className="text-blue-700 text-xs sm:text-sm mb-3 sm:mb-4">
                     Detailed analysis of lead generation performance, including conversion rates and source attribution.
                   </p>
                   <div className="text-xs text-blue-600 font-medium">Updated daily</div>
@@ -342,14 +344,14 @@ export default function ReportsPage() {
               </Card>
 
               <Card className="bg-green-50 border-green-200 hover:bg-green-100 transition-colors cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 bg-green-600 rounded-lg flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 text-white" />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 bg-green-600 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-green-900">Revenue Report</h3>
+                    <h3 className="text-sm sm:text-lg font-semibold text-green-900">Revenue Report</h3>
                   </div>
-                  <p className="text-green-700 text-sm mb-4">
+                  <p className="text-green-700 text-xs sm:text-sm mb-3 sm:mb-4">
                     Comprehensive revenue tracking with earnings breakdown by campaign and time period.
                   </p>
                   <div className="text-xs text-green-600 font-medium">Updated daily</div>
@@ -357,14 +359,14 @@ export default function ReportsPage() {
               </Card>
 
               <Card className="bg-purple-50 border-purple-200 hover:bg-purple-100 transition-colors cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-white" />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-purple-900">Campaign Performance</h3>
+                    <h3 className="text-sm sm:text-lg font-semibold text-purple-900">Campaign Performance</h3>
                   </div>
-                  <p className="text-purple-700 text-sm mb-4">
+                  <p className="text-purple-700 text-xs sm:text-sm mb-3 sm:mb-4">
                     Campaign-specific analytics showing performance metrics and optimization opportunities.
                   </p>
                   <div className="text-xs text-purple-600 font-medium">Updated daily</div>
@@ -372,14 +374,14 @@ export default function ReportsPage() {
               </Card>
 
               <Card className="bg-yellow-50 border-yellow-200 hover:bg-yellow-100 transition-colors cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 bg-yellow-600 rounded-lg flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-white" />
-                </div>
-                    <h3 className="text-lg font-semibold text-yellow-900">UTM Analytics</h3>
-              </div>
-                  <p className="text-yellow-700 text-sm mb-4">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 bg-yellow-600 rounded-lg flex items-center justify-center">
+                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                    </div>
+                    <h3 className="text-sm sm:text-lg font-semibold text-yellow-900">UTM Analytics</h3>
+                  </div>
+                  <p className="text-yellow-700 text-xs sm:text-sm mb-3 sm:mb-4">
                     Deep dive into UTM parameter performance and traffic source analysis.
                   </p>
                   <div className="text-xs text-yellow-600 font-medium">Updated daily</div>
@@ -388,39 +390,39 @@ export default function ReportsPage() {
             </div>
           </CardContent>
         </Card>
-            </div>
+      </div>
             
       {/* Report Features */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <Card className="bg-white border-gray-200">
-          <CardHeader>
-            <CardTitle>Report Features</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Report Features</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-xs font-medium text-blue-600">✓</span>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">Real-time Data</h4>
-                    <p className="text-sm text-gray-600">All reports are updated in real-time with the latest information</p>
+                    <h4 className="font-medium text-gray-900 text-sm sm:text-base">Real-time Data</h4>
+                    <p className="text-xs sm:text-sm text-gray-600">All reports are updated in real-time with the latest information</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-xs font-medium text-blue-600">✓</span>
-              </div>
+                  </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">Export Options</h4>
-                    <p className="text-sm text-gray-600">Download reports in PDF, CSV, or Excel formats</p>
+                    <h4 className="font-medium text-gray-900 text-sm sm:text-base">Export Options</h4>
+                    <p className="text-xs sm:text-sm text-gray-600">Download reports in PDF, CSV, or Excel formats</p>
                     <Button
                       onClick={generatePDFReport}
                       disabled={isGenerating || !dashboardData}
                       variant="outline"
                       size="sm"
-                      className="mt-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                      className="mt-2 text-blue-600 border-blue-300 hover:bg-blue-50 text-xs sm:text-sm"
                     >
                       {isGenerating ? (
                         <>
@@ -428,34 +430,34 @@ export default function ReportsPage() {
                           Generating...
                         </>
                       ) : (
-                                              <>
-                        <Download className="h-3 w-3 mr-1" />
-                        Personal PDF
-                      </>
+                        <>
+                          <Download className="h-3 w-3 mr-1" />
+                          Personal PDF
+                        </>
                       )}
                     </Button>
-            </div>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-xs font-medium text-blue-600">✓</span>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">Customizable Views</h4>
-                    <p className="text-sm text-gray-600">Filter and customize reports based on your needs</p>
-            </div>
-          </div>
+                    <h4 className="font-medium text-gray-900 text-sm sm:text-base">Customizable Views</h4>
+                    <p className="text-xs sm:text-sm text-gray-600">Filter and customize reports based on your needs</p>
+                  </div>
+                </div>
                 <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-xs font-medium text-blue-600">✓</span>
-      </div>
+                  </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">Historical Data</h4>
-                    <p className="text-sm text-gray-600">Access historical performance data for trend analysis</p>
-          </div>
-        </div>
+                    <h4 className="font-medium text-gray-900 text-sm sm:text-base">Historical Data</h4>
+                    <p className="text-xs sm:text-sm text-gray-600">Access historical performance data for trend analysis</p>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
